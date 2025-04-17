@@ -1,0 +1,13 @@
+[2025-04-16 17:12:13,019 | INFO] [baseCommands.py | lineno33 | log_incoming_message] => Message from None: /add
+[2025-04-16 17:12:53,128 | INFO] [baseCommands.py | lineno33 | log_incoming_message] => Message from None: /add
+[2025-04-16 17:12:56,013 | INFO] [baseCommands.py | lineno33 | log_incoming_message] => Message from None: /add
+[2025-04-16 17:13:00,522 | INFO] [baseCommands.py | lineno33 | log_incoming_message] => Message from None: /list
+[2025-04-16 17:15:35,487 | INFO] [baseCommands.py | lineno34 | log_handler] => User: None - Full Message: /add
+[2025-04-16 17:15:43,593 | INFO] [baseCommands.py | lineno34 | log_handler] => User: None - Full Message: /add user sdf
+[2025-04-16 17:16:22,397 | INFO] [baseCommands.py | lineno35 | log_handler] => User: None - Full Message: /staasdf
+[2025-04-16 17:21:27,789 | INFO] [baseCommands.py | lineno34 | log_handler] => Command received from None: /s
+[2025-04-16 17:21:30,595 | INFO] [baseCommands.py | lineno34 | log_handler] => Command received from None: /add
+[2025-04-16 17:54:43,913 | INFO] [botHandler.py | lineno17 | log_handler] => Command received from None: /t
+[2025-04-16 17:55:46,109 | INFO] [botHandler.py | lineno17 | log_handler] => Command received from None: /start
+[2025-04-16 17:55:50,427 | INFO] [botHandler.py | lineno17 | log_handler] => Command received from None: /help
+[2025-04-16 18:15:35,413 | INFO] [botHandler.py | lineno14 | log_handler] => Command received from 'unknown': '/test'

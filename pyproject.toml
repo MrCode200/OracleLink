@@ -1,0 +1,19 @@
+[project]
+name = "OracleLink"
+version = "0.1.0"
+description = "Telegram Bot for Oracle (Trading Bot)"
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "MIT" }
+authors = [
+  { name = "MrCode200", email = "navidyaghmaei@gmail.com" }
+]
+[tool.poetry.dependencies]
+pandas = "^2.2.3"
+ccxt = "^4.4.75"
+matplotlib = "^3.10.1"
+scipy = "^1.15.2"
+numpy = "^2.2.4"
+python-telegram-bot = {extras = ["job-queue"], version = "^22.0"}
+python-binance = "^1.0.28"
+pandas-ta = "^0.3.14b0"
