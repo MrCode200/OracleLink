@@ -6,9 +6,18 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 
 from .commands import help_command, log_handler
 from .utils import parse_interval, seconds_to_next_boundry
+from apis.binanceApi.fetcher import fetch_data
+from tradingComponents.strategies import ShadowsTrendingTouch
 
 logger = logging.getLogger("oracle.link")
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+stt = ShadowsTrendingTouch(
+    sma_period=7,
+    shadow_to_body_ratio=1.25,
+    shadow_padding_pips=2,
+    opposite_shadow_to_body_ratio=0.25
+)
 
 class OracleLinkBot:
     def __init__(self, token):
@@ -134,7 +143,14 @@ class OracleLinkBot:
         # Kian HERE u CODE
         job_data = context.job.data
         chat_id = job_data["chat_id"]
-        message = job_data["symbol"] + " " + job_data["interval"]
-        await context.bot.send_message(chat_id=chat_id, text=message)
+        interval = job_data["interval"]
+        symbol = job_data["symbol"]
+
+        num_of_candles = 120
+        df = fetch_data(symbol=symbol, timeframe=interval, lookback_minutes=parse_interval(interval) * num_of_candles)
+
+        confidence = stt.evaluate(df)
+
+        await context.bot.send_message(chat_id=chat_id, text=f"STT: {confidence}")
 
 
