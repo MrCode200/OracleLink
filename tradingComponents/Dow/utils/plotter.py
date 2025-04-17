@@ -9,7 +9,7 @@ import pandas as pd
 root_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..')
 
 
-def plot_candle_chart(df: pd.DataFrame, peaks, valleys, trend_info=None, sma: Optional[int] = None, symbol="NOT_PASSED",
+def plot_candle_chart(df: pd.DataFrame, peaks: list[int] = [], valleys: list[int] = [], trend_info=None, sma: Optional[int] = None, symbol="NOT_PASSED",
                       return_img_buffer: bool = False, show_candles: Optional[int] = None):
     """Plot a candlestick chart with optional trend info, peaks, valleys."""
     # Create addplot objects for peaks and valleys

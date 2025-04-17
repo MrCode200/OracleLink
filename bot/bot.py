@@ -5,11 +5,12 @@ from telegram import BotCommand, Update, InlineKeyboardMarkup, InlineKeyboardBut
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, PicklePersistence, \
     CallbackQueryHandler
 
-from breackout import detect_support_resistance, check_breakout
+from breackout import breackout
 from tradingComponents.Dow import detect_dow_trend, plot_candle_chart
 from .commands import help_command, log_handler
 from apis.binanceApi.fetcher import get_klines
 from tradingComponents.strategies import ShadowsTrendingTouch
+from .utils import parse_interval, seconds_to_next_boundry
 
 logger = logging.getLogger("oracle.link")
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -137,10 +138,12 @@ class OracleLinkBot:
             context.job_queue.stop()
 
         for symbol, interval_str in watchlist:
+            interval_sec: int = parse_interval(interval_str)
+            delay: float = seconds_to_next_boundry(interval_sec)
             context.job_queue.run_repeating(
                 self.scheduled_job,
-                interval=5 * 60,
-                first=1,
+                interval=interval_sec,
+                first=delay,
                 data={'chat_id': chat_id, 'symbol': symbol, 'interval': interval_str}
             )
 
@@ -264,23 +267,16 @@ class OracleLinkBot:
         # Fetching data
         df = get_klines(symbol=symbol, interval=interval, limit=75)
 
-        # Daw
+        # Dow
         result, peaks, valleys = detect_dow_trend(df)
         buf = plot_candle_chart(df, peaks, valleys, result, sma=stt.sma_period, symbol=symbol, return_img_buffer=True, show_candles=15)
 
-        # Stt
+        # STT
         stt_conf = stt.evaluate(df)
 
         # Breakout
-        # support, resistance = detect_support_resistance(df.iloc[:-1], order=4)
-        # last_candle = df.iloc[-2]  # کندل بسته‌شده‌ی آخر
-        # last_close = last_candle['Close']
-        # timestamp = last_candle.name.timestamp() * 1000
+        alerts: list[str] = breackout(df)
 
-        # nearest_support, nearest_resistance = support[-1], resistance[-1]
-        # alerts = check_breakout(last_close, nearest_support, nearest_resistance, timestamp)
-        alerts = "PLACEHOLDER"
-
-        #if alerts or stt_conf != 0 or True:
-        await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=f"STT: {stt_conf}\n"
-                                                                             f"{alerts}")
+        caption: str = f"STT: {stt_conf}\n"
+        caption += "\n".join(alerts)
+        await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=caption)

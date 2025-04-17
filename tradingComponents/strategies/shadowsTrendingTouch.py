@@ -18,7 +18,7 @@ class ShadowsTrendingTouch:
             return 0
 
         self_df = df.copy().iloc[-valid_df_range:]
-        last_candle = self_df.iloc[-2]
+        last_candle = self_df.iloc[-1]
         sma = create_sma(close=self_df.Close, length=self.sma_period)
 
         # Candle Body doesn't touch SMA
