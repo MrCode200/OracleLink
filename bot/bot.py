@@ -1,13 +1,14 @@
 import logging
 import os
 
-from telegram import BotCommand, Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, PicklePersistence
+from telegram import BotCommand, Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, PicklePersistence, \
+    CallbackQueryHandler
 
+from breackout import detect_support_resistance, check_breakout
 from tradingComponents.Dow import detect_dow_trend, plot_candle_chart
 from .commands import help_command, log_handler
-from .utils import parse_interval, seconds_to_next_boundry
-from apis.binanceApi.fetcher import fetch_data
+from apis.binanceApi.fetcher import get_klines
 from tradingComponents.strategies import ShadowsTrendingTouch
 
 logger = logging.getLogger("oracle.link")
@@ -38,6 +39,8 @@ class OracleLinkBot:
         self.app.add_handler(CommandHandler("add", self.add_symbol))
         self.app.add_handler(CommandHandler("rmv", self.remove_symbol))
         self.app.add_handler(CommandHandler("list", self.list_watchlist))
+
+        self.app.add_handler(CallbackQueryHandler(self.inline_button_handler))
         # Doesn't work if the command exists
         self.app.add_handler(MessageHandler(filters.COMMAND, log_handler, block=False))
 
@@ -93,48 +96,160 @@ class OracleLinkBot:
         await update.message.reply_text(message, parse_mode="HTML")
 
     async def remove_symbol(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /rmv command"""
-        args = context.args
-        if len(args) != 2:
-            await update.message.reply_text("Usage: /rmv <ticker> <timeframe>")
+        user_data = context.user_data
+        watchlist = user_data.get('watchlist', [])
+
+        if not watchlist:
+            await update.message.reply_text("Your watchlist is empty! Nothing to manage. 📭")
             return
 
-        symbol = args[0].upper()
-        timeframe = args[1].lower()
+        page = 0
+        keyboard = self.create_watchlist_keyboard(watchlist, page)
 
-        watchlist = context.user_data.get('watchlist', [])
-        if (symbol, timeframe) not in watchlist:
-            await update.message.reply_text(f"❌ {symbol} with timeframe {timeframe} not found in watchlist")
-            return
-
-        watchlist.remove((symbol, timeframe))
-        await update.message.reply_text(f"✅ Removed {symbol} ({timeframe}) from watchlist")
+        await update.message.reply_text(
+            "Select items to remove from your watchlist:\n"
+            f"Page {page + 1}/{(len(watchlist) - 1) // 5 + 1}",
+            reply_markup=keyboard
+        )
 
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        msg = "🚀 Crypto Trading Bot At Your Service!"
-        watchlist = context.user_data.get('watchlist', [])
-        if not watchlist:
-            msg += "\nWatchlist is empty （；´д｀）ゞ\n"
-            await update.message.reply_text(msg)
+        user_data = context.user_data
+        if user_data.get('running'):
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🛑 Stop", callback_data='stop')]
+            ])
+            await update.message.reply_text(
+                "🤖 Your bot is already running! Jobs will continue to fire until you stop them. (ง •̀_•́)ง",
+                reply_markup=keyboard
+            )
             return
 
-        chat_id = update.message.chat_id
-        for key, interval_str in watchlist:
-            interval_sec = parse_interval(interval_str)
-            delay = seconds_to_next_boundry(interval_sec)
+        watchlist = user_data.get('watchlist', [])
+        if not watchlist:
+            await update.message.reply_text("Your watchlist is empty. Use /add first. (￣﹃￣)...")
+            return
+
+        chat_id = update.effective_chat.id
+        user_data['running'] = True
+
+        # Stop any existing jobs first
+        if context.job_queue:
+            context.job_queue.stop()
+
+        for symbol, interval_str in watchlist:
             context.job_queue.run_repeating(
                 self.scheduled_job,
-                interval=interval_sec,
-                first=delay,
-                data={'chat_id': chat_id, 'symbol': key, 'interval': interval_str}
+                interval=5 * 60,
+                first=1,
+                data={'chat_id': chat_id, 'symbol': symbol, 'interval': interval_str}
             )
 
-        msg += "\nStarted watching... (▀̿Ĺ̯▀̿ ̿)\n"
-        await update.message.reply_text(msg)
+        await update.message.reply_text(
+            "✅ Started watching your symbols! (▀̿Ĺ̯▀̿ ̿)\n"
+            "ℹ️ Note: Changes you make (add / rmv) won't take effect until you /stop and then /start again."
+        )
 
     async def stop_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await context.job_queue.stop()
-        await update.message.reply_text("Link stopped watching... (_　_)。゜zｚＺ.")
+        user_data = context.user_data
+        if not user_data.get('running'):
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🚀 Start", callback_data='start')]
+            ])
+            await update.message.reply_text(
+                "🚫 The bot is already stopped for you. (┬┬﹏┬┬)",
+                reply_markup=keyboard
+            )
+            return
+
+        user_data['running'] = False
+
+        # Stop all jobs
+        if context.job_queue:
+            context.job_queue.stop()
+
+        await update.message.reply_text(
+            "🛑 Stopped watching your symbols. (_　_)。゜zｚＺ\n"
+            "ℹ️ To start again, simply use /start."
+        )
+
+    def create_watchlist_keyboard(self, watchlist, page=0, items_per_page=5):
+        start_idx = page * items_per_page
+        end_idx = start_idx + items_per_page
+        current_items = watchlist[start_idx:end_idx]
+
+        keyboard = []
+        # Add watchlist item buttons
+        for symbol, interval in current_items:
+            keyboard.append([
+                InlineKeyboardButton(
+                    f"❌ {symbol} ({interval})",
+                    callback_data=f"remove_{symbol}_{interval}"
+                )
+            ])
+
+        # Add navigation buttons if needed
+        nav_buttons = []
+        if page > 0:
+            nav_buttons.append(InlineKeyboardButton("⬅️ Previous", callback_data=f"page_{page-1}"))
+        if end_idx < len(watchlist):
+            nav_buttons.append(InlineKeyboardButton("Next ➡️", callback_data=f"page_{page+1}"))
+        if nav_buttons:
+            keyboard.append(nav_buttons)
+
+        return InlineKeyboardMarkup(keyboard)
+
+    async def inline_button_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        query = update.callback_query
+        user_data = context.user_data
+
+        if query.data.startswith('page_'):
+            # Handle page navigation
+            page = int(query.data.split('_')[1])
+            watchlist = user_data.get('watchlist', [])
+            keyboard = self.create_watchlist_keyboard(watchlist, page)
+
+            await query.message.edit_text(
+                "Select items to remove from your watchlist:\n"
+                f"Page {page + 1}/{(len(watchlist) - 1) // 5 + 1}",
+                reply_markup=keyboard
+            )
+            await query.answer()
+
+        elif query.data.startswith('remove_'):
+            # Handle item removal
+            _, symbol, interval = query.data.split('_')
+            watchlist = user_data.get('watchlist', [])
+            item = (symbol, interval)
+
+            if item in watchlist:
+                watchlist.remove(item)
+                user_data['watchlist'] = watchlist
+
+                # Update the watchlist view
+                if watchlist:
+                    keyboard = self.create_watchlist_keyboard(watchlist, 0)
+                    await query.message.edit_text(
+                        "Select items to remove from your watchlist:\n"
+                        f"Page 1/{(len(watchlist) - 1) // 5 + 1}",
+                        reply_markup=keyboard
+                    )
+                else:
+                    await query.message.edit_text("Your watchlist is now empty! Nothing to manage. 📭")
+                
+                await query.answer(f"Removed {symbol} ({interval}) ✅")
+
+        elif query.data == 'start':
+            if context.user_data.get('running'):
+                await query.answer("Bot is already running! 🤖")
+                return
+            await query.answer("Starting bot... ✅")
+            await self.start_command(update, context)
+        elif query.data == 'stop':
+            if not context.user_data.get('running'):
+                await query.answer("Bot is already stopped! 🛑")
+                return
+            await query.answer("Stopping bot... 🔄")
+            await self.stop_command(update, context)
 
     async def clear_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['watchlist'] = []
@@ -146,14 +261,26 @@ class OracleLinkBot:
         interval = job_data["interval"]
         symbol = job_data["symbol"]
 
-        num_of_candles = 35
-        df = fetch_data(symbol=symbol, timeframe=interval, lookback_minutes=parse_interval(interval) * num_of_candles)
+        # Fetching data
+        df = get_klines(symbol=symbol, interval=interval, limit=75)
 
+        # Daw
         result, peaks, valleys = detect_dow_trend(df)
-        buf = plot_candle_chart(df, peaks, valleys, result, sma=stt.sma_period, symbol=symbol, return_img_buffer=True)
+        buf = plot_candle_chart(df, peaks, valleys, result, sma=stt.sma_period, symbol=symbol, return_img_buffer=True, show_candles=15)
 
+        # Stt
         stt_conf = stt.evaluate(df)
 
-        await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=f"STT: {stt_conf}")
+        # Breakout
+        # support, resistance = detect_support_resistance(df.iloc[:-1], order=4)
+        # last_candle = df.iloc[-2]  # کندل بسته‌شده‌ی آخر
+        # last_close = last_candle['Close']
+        # timestamp = last_candle.name.timestamp() * 1000
 
+        # nearest_support, nearest_resistance = support[-1], resistance[-1]
+        # alerts = check_breakout(last_close, nearest_support, nearest_resistance, timestamp)
+        alerts = "PLACEHOLDER"
 
+        #if alerts or stt_conf != 0 or True:
+        await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=f"STT: {stt_conf}\n"
+                                                                             f"{alerts}")

@@ -101,7 +101,7 @@ if __name__ == '__main__':
     # Fetch market data
     df = fetch_data(
         symbol=symbol,
-        timeframe='1m',
+        interval='1m',
         lookback_minutes=30
     )
     print(f"Fetched {len(df)} data points for {symbol}")

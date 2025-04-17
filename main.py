@@ -14,7 +14,7 @@ def main():
     )
 
     bot = OracleLinkBot(
-        token = "7749426469:AAEDOfpbgsgdK2_6HMbeQLaX_t1V53YT6lw"
+        token = "7749426469:AAF40HNdDQU_79FfqzsAUUNsTEUnswRLtDY"
     )
     bot.run()
 

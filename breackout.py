@@ -4,22 +4,11 @@ import time
 from binance.client import Client
 from scipy.signal import argrelextrema
 
+from apis.binanceApi import get_klines
+
 # اتصال به Binance (نیازی به API Key نیست برای دیتا عمومی)
 client = Client()
 tickers = ["BTCUSDT", "DOGEUSDT"]
-
-
-def get_klines(symbol='BTCUSDT', interval='1m', limit=100):
-    klines = client.get_klines(symbol=symbol, interval=interval, limit=limit)
-    df = pd.DataFrame(klines, columns=[
-        'timestamp', 'Open', 'High', 'Low', 'Close',
-        'Volume', 'Close time', 'Quote asset volume',
-        'Number of trades', 'Taker buy base asset volume',
-        'Taker buy quote asset volume', 'Ignore'
-    ])
-    df['Close'] = df['Close'].astype(float)
-    df['timestamp'] = pd.to_datetime(df['Close time'], unit='ms')
-    return df
 
 
 def detect_support_resistance(price_data, order=15):
@@ -47,28 +36,29 @@ def check_breakout(last_close, nearest_support, nearest_resistance, timestamp):
     return messages
 
 
-# 🌀 اجرای مداوم هر 10 ثانیه
-print("🔍 Running live breakout detector (press Ctrl+C to stop)...\n")
-while True:
-    try:
-        for ticker in tickers:
-            df = get_klines(symbol=ticker, interval='15m', limit=72)
-            if len(df) < 10:
-                continue
+if __name__ == '__main__':
+    # 🌀 اجرای مداوم هر 10 ثانیه
+    print("🔍 Running live breakout detector (press Ctrl+C to stop)...\n")
+    while True:
+        try:
+            for ticker in tickers:
+                df = get_klines(symbol=ticker, interval='15m', limit=72)
+                if len(df) < 10:
+                    continue
 
-            support, resistance = detect_support_resistance(df.iloc[:-1], order=4)
-            last_candle = df.iloc[-2]  # کندل بسته‌شده‌ی آخر
-            last_close = last_candle['Close']
-            timestamp = last_candle['timestamp']
+                support, resistance = detect_support_resistance(df.iloc[:-1], order=4)
+                last_candle = df.iloc[-2]  # کندل بسته‌شده‌ی آخر
+                last_close = last_candle['Close']
+                timestamp = last_candle['timestamp']
 
-            nearest_support, nearest_resistance = support[-1], resistance[-1]
-            print(ticker, nearest_support, nearest_resistance)
-            alerts = check_breakout(last_close, nearest_support, nearest_resistance, timestamp)
+                nearest_support, nearest_resistance = support[-1], resistance[-1]
+                print(ticker, nearest_support, nearest_resistance)
+                alerts = check_breakout(last_close, nearest_support, nearest_resistance, timestamp)
 
-            for alert in alerts:
-                print("🚨", alert)
+                for alert in alerts:
+                    print("🚨", alert)
 
-    except Exception as e:
-        print("❌ Error:", e)
+        except Exception as e:
+            print("❌ Error:", e)
 
-    time.sleep(10)
+        time.sleep(10)
