@@ -267,15 +267,19 @@ class OracleLinkBot:
         # Fetching data
         df = get_klines(symbol=symbol, interval=interval, limit=75)
 
-        # Dow
-        result, peaks, valleys = detect_dow_trend(df)
-        buf = plot_candle_chart(df, peaks, valleys, result, sma=stt.sma_period, symbol=symbol, return_img_buffer=True, show_candles=15)
-
         # STT
         stt_conf = stt.evaluate(df)
 
         # Breakout
         alerts: list[str] = breackout(df)
+
+        if stt_conf == 0 and alerts:
+            return
+
+        # Dow
+        result, peaks, valleys = detect_dow_trend(df)
+        buf = plot_candle_chart(df, peaks, valleys, result, sma=stt.sma_period, symbol=symbol,
+                                return_img_buffer=True, show_candles=15)
 
         caption: str = f"STT: {stt_conf}\n"
         caption += "\n".join(alerts)
