@@ -1,1 +1,1 @@
-from .plotter import plot_chart
+from .plotter import plot_candle_chart

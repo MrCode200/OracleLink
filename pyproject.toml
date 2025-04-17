@@ -17,3 +17,4 @@ numpy = "^2.2.4"
 python-telegram-bot = {extras = ["job-queue"], version = "^22.0"}
 python-binance = "^1.0.28"
 pandas-ta = "^0.3.14b0"
+mplfinance = "^0.12.10b0"

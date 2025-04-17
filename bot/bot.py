@@ -4,6 +4,7 @@ import os
 from telegram import BotCommand, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, PicklePersistence
 
+from tradingComponents.Dow import detect_dow_trend, plot_candle_chart
 from .commands import help_command, log_handler
 from .utils import parse_interval, seconds_to_next_boundry
 from apis.binanceApi.fetcher import fetch_data
@@ -140,17 +141,19 @@ class OracleLinkBot:
         await update.message.reply_text("Watchlist cleared. ╰(￣ω￣ｏ)")
 
     async def scheduled_job(self, context: ContextTypes.DEFAULT_TYPE):
-        # Kian HERE u CODE
         job_data = context.job.data
         chat_id = job_data["chat_id"]
         interval = job_data["interval"]
         symbol = job_data["symbol"]
 
-        num_of_candles = 120
+        num_of_candles = 35
         df = fetch_data(symbol=symbol, timeframe=interval, lookback_minutes=parse_interval(interval) * num_of_candles)
 
-        confidence = stt.evaluate(df)
+        result, peaks, valleys = detect_dow_trend(df)
+        buf = plot_candle_chart(df, peaks, valleys, result, sma=stt.sma_period, symbol=symbol, return_img_buffer=True)
 
-        await context.bot.send_message(chat_id=chat_id, text=f"STT: {confidence}")
+        stt_conf = stt.evaluate(df)
+
+        await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=f"STT: {stt_conf}")
 
 

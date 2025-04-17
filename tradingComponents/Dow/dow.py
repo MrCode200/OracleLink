@@ -95,25 +95,23 @@ def detect_dow_trend(df: pd.DataFrame):
 if __name__ == '__main__':
     """Main function to run the trend detection and plotting"""
     from apis.binanceApi import fetch_data
-    from tradingComponents.Dow.utils import plot_chart
+    from tradingComponents.Dow.utils import plot_candle_chart
 
     symbol = 'BTCUSDT'
-    try:
-        # Fetch market data
-        df = fetch_data(
-            symbol=symbol,
-            timeframe='1m',
-            lookback_minutes=30
-        )
-        print(f"Fetched {len(df)} data points for {symbol}")
+    # Fetch market data
+    df = fetch_data(
+        symbol=symbol,
+        timeframe='1m',
+        lookback_minutes=30
+    )
+    print(f"Fetched {len(df)} data points for {symbol}")
 
-        # Detect trend
-        result, peaks, valleys = detect_dow_trend(df)
+    # Detect trend
+    result, peaks, valleys = detect_dow_trend(df)
 
-        # Plot results
-        plot_chart(df, peaks, valleys, result)
+    # Plot results
+    plot_candle_chart(df, peaks, valleys, result, sma=7)
 
-        print(result)
-    except Exception as e:
-        print(f"Error: {e}")
+    print(result)
+
 

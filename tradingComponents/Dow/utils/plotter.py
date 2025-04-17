@@ -1,40 +1,53 @@
-import matplotlib.pyplot as plt
+from datetime import datetime
+import os
+from io import BytesIO
+from typing import Optional
+
+import mplfinance as mpf
+import pandas as pd
+
+root_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..')
 
 
-def plot_chart(df, peaks, valleys, trend_info=None, symbol="NOT_PASSED"):
-    """Plot the price chart with trend analysis"""
-    plt.figure(figsize=(14, 7))
+def plot_candle_chart(df: pd.DataFrame, peaks, valleys, trend_info=None, sma: Optional[int] = None, symbol="NOT_PASSED",
+                      return_img_buffer: bool = False):
+    """Plot a candlestick chart with optional trend info, peaks, valleys."""
+    # Create addplot objects for peaks and valleys
+    apds = []
 
-    # Plot price data
-    plt.plot(df['Close'], label='Close Price', color='royalblue', linewidth=1.5)
+    if len(peaks) > 0:
+        peak_data = pd.Series(index=df.index, dtype=float)
+        peak_data[peaks] = df['Close'].iloc[peaks]
+        apds.append(mpf.make_addplot(peak_data, type='scatter', markersize=100,
+                                     marker='^', color='red', label='Peaks'))
+    if len(valleys) > 0:
+        valley_data = pd.Series(index=df.index, dtype=float)
+        valley_data[valleys] = df['Close'].iloc[valleys]
+        apds.append(mpf.make_addplot(valley_data, type='scatter', markersize=100,
+                                     marker='v', color='green', label='Valleys'))
 
-    # Plot peaks and valleys
-    plt.scatter(df.index[peaks], df['Close'].iloc[peaks], color='red', label='Swing Highs', marker='^', s=80)
-    plt.scatter(df.index[valleys], df['Close'].iloc[valleys], color='green', label='Swing Lows', marker='v', s=80)
+    if sma:
+        apds.append(
+            mpf.make_addplot(df['Close'].rolling(window=sma).mean(), label=f'SMA ({sma})', color='orange')
+        )
 
-    # Add connecting lines between successive peaks and valleys to visualize trend
-    if len(peaks) >= 2:
-        plt.plot(df.index[peaks[-2:]], df['Close'].iloc[peaks[-2:]], 'r--', alpha=0.7)
-    if len(valleys) >= 2:
-        plt.plot(df.index[valleys[-2:]], df['Close'].iloc[valleys[-2:]], 'g--', alpha=0.7)
-
-    # Add title based on trend information
+    # Create title
     if trend_info:
-        title = f"{trend_info['direction']} - {trend_info['phase']} | Power: {trend_info['strength']:.5f} | Price: {trend_info['price']:.5f}"
-
-        # Add color based on trend direction
-        color = 'green' if trend_info['direction'] == 'Uptrend' else 'red' if trend_info[
-                                                                                  'direction'] == 'Downtrend' else 'orange'
-        plt.title(title, color=color, fontweight='bold')
+        trend_title = f"{trend_info['direction']} - {trend_info['phase']} | Power: {trend_info['strength']:.5f} | Price: {trend_info['price']:.5f}"
     else:
-        plt.title("No Clear Trend Detected", fontweight='bold')
+        trend_title = "No Clear Trend Detected"
 
-    # Add labels and grid
-    plt.xlabel('Date')
-    plt.ylabel(f'Price ({symbol.split("/")[1]})')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
+    # Define the style
+    style = mpf.make_mpf_style(base_mpf_style='yahoo', gridstyle=':', gridcolor='gray')
 
-    # Show the chart
-    plt.show()
+    # Plot
+    if return_img_buffer:
+        buf = BytesIO()
+        mpf.plot(df, type='candle', addplot=apds, title=trend_title,
+                 ylabel=f'Price ({symbol})', style=style, volume=True,
+                 savefig=dict(fname=buf, dpi=150, format='png'))
+        buf.seek(0)
+        return buf
+    else:
+        mpf.plot(df, type='candle', addplot=apds, title=trend_title,
+                 ylabel=f'Price ({symbol})', style=style, volume=True)
