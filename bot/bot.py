@@ -2,8 +2,7 @@ import logging
 import os
 
 from telegram import BotCommand, Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, PicklePersistence, \
-    TypeHandler
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, PicklePersistence
 
 from .commands import help_command, log_handler
 from .utils import parse_interval, seconds_to_next_boundry
@@ -22,13 +21,15 @@ class OracleLinkBot:
         self.app.run_polling()
 
     def init_bot(self):
-        self.app.add_handler(TypeHandler(filters.COMMAND, log_handler))
         self.app.add_handler(CommandHandler("start", self.start_command))
         self.app.add_handler(CommandHandler("stop", self.stop_command))
+        self.app.add_handler(CommandHandler("clear", self.clear_command))
         self.app.add_handler(CommandHandler("help", help_command))
         self.app.add_handler(CommandHandler("add", self.add_symbol))
         self.app.add_handler(CommandHandler("rmv", self.remove_symbol))
         self.app.add_handler(CommandHandler("list", self.list_watchlist))
+        # Doesn't work if the command exists
+        self.app.add_handler(MessageHandler(filters.COMMAND, log_handler, block=False))
 
     async def add_symbol(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         args = context.args
@@ -124,6 +125,10 @@ class OracleLinkBot:
     async def stop_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.job_queue.stop()
         await update.message.reply_text("Link stopped watching... (_　_)。゜zｚＺ.")
+
+    async def clear_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        context.user_data['watchlist'] = []
+        await update.message.reply_text("Watchlist cleared. ╰(￣ω￣ｏ)")
 
     async def scheduled_job(self, context: ContextTypes.DEFAULT_TYPE):
         # Kian HERE u CODE
