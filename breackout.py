@@ -17,7 +17,7 @@ def get_nearest_levels(close_price, support_levels, resistance_levels):
     nearest_resistance = min([level for level in resistance_levels if level > close_price], default=None)
     return nearest_support, nearest_resistance
 
-def check_breakout(last_close, nearest_support, nearest_resistance, close_time) -> dict[str, float | str] | None:
+def check_breakout(last_close, nearest_support, nearest_resistance, close_time) -> dict[str, float | str]:
     breakout_info: dict[str, float | str] = {
         'support': nearest_support,
         'resistance': nearest_resistance,
@@ -30,17 +30,15 @@ def check_breakout(last_close, nearest_support, nearest_resistance, close_time) 
         breakout_info['direction'] = 'below'
     elif nearest_resistance and last_close > nearest_resistance:
         breakout_info['direction'] = 'above'
-    else:
-        return None
 
     return breakout_info
 
-def breakout(df) -> dict[str, float | str] | None:
+def breakout(df) -> dict[str, float | str]:
     support, resistance = detect_support_resistance(df.iloc[:-1], order=4)
     last_candle: Series = df.iloc[-2]  # کندل بسته‌شده‌ی آخر
     last_close: float = last_candle['Close']
     close_time: str = last_candle['Close Time']
 
     nearest_support, nearest_resistance = support[-1], resistance[-1]
-    breakouts: dict[str, float | str] | None = check_breakout(last_close, nearest_support, nearest_resistance, close_time)
+    breakouts: dict[str, float | str] = check_breakout(last_close, nearest_support, nearest_resistance, close_time)
     return breakouts

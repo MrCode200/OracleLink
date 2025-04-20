@@ -140,6 +140,7 @@ class OracleLinkBot:
         for symbol, interval_str in watchlist:
             interval_sec: int = parse_interval(interval_str)
             delay: float = seconds_to_next_boundry(interval_sec)
+            logger.debug(f"Starting job for {symbol} with interval {interval_sec} seconds")
             context.job_queue.run_repeating(
                 self.scheduled_job,
                 interval=interval_sec,
@@ -271,7 +272,7 @@ class OracleLinkBot:
         stt_conf = stt.evaluate(df)
 
         # Breakout
-        breakout_info: dict[str, float | str] | None = breakout(df)
+        breakout_info: dict[str, float | str] = breakout(df)
 
         if stt_conf == 0 or breakout_info:
             return
@@ -281,6 +282,8 @@ class OracleLinkBot:
         buf = plot_candle_chart(df, peaks, valleys, result, breakout_info=breakout_info, sma=stt.sma_period, symbol=symbol,
                                 return_img_buffer=True, show_candles=15)
 
-        caption: str = f"STT: {stt_conf}\n"
-        caption += f"Breakout: {breakout_info}\n"
+        caption: str = (f"STT: {stt_conf}\n"
+                        f"Breakout: \n")
+        for key, value in breakout_info.items():
+            caption += f"{key}: {value}\n"
         await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=caption)
