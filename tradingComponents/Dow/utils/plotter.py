@@ -9,10 +9,15 @@ import pandas as pd
 root_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..')
 
 
-def plot_candle_chart(df: pd.DataFrame, peaks: list[int] = [], valleys: list[int] = [], trend_info=None, sma: Optional[int] = None, symbol="NOT_PASSED",
-                      return_img_buffer: bool = False, show_candles: Optional[int] = None):
+def plot_candle_chart(df: pd.DataFrame, peaks: list[int] = None, valleys: list[int] = None, trend_info=None, sma: Optional[int] = None, symbol="NOT_PASSED",
+                      return_img_buffer: bool = False, show_candles: Optional[int] = None, breakout_info: dict[str, float | str] | None = None):
     """Plot a candlestick chart with optional trend info, peaks, valleys."""
-    # Create addplot objects for peaks and valleys
+    if peaks is None:
+        peaks = []
+    if valleys is None:
+        valleys = []
+
+    # Create add plot objects for peaks and valleys
     if show_candles:
         # Adjust peaks and valleys indices for the sliced dataframe
         df_len = len(df)
@@ -40,6 +45,16 @@ def plot_candle_chart(df: pd.DataFrame, peaks: list[int] = [], valleys: list[int
         apds.append(
             mpf.make_addplot(df['Close'].rolling(window=sma).mean(), label=f'SMA ({sma})', color='orange')
         )
+
+    # Add support and resistance lines if breakout info is provided
+    if breakout_info is not None:
+        if breakout_info.get('support') is not None:
+            support_line = pd.Series([breakout_info['support']] * len(df), index=df.index)
+            apds.append(mpf.make_addplot(support_line, color='green', linestyle='--', label='Support'))
+            
+        if breakout_info.get('resistance') is not None:
+            resistance_line = pd.Series([breakout_info['resistance']] * len(df), index=df.index)
+            apds.append(mpf.make_addplot(resistance_line, color='red', linestyle='--', label='Resistance'))
 
     # Create title
     if trend_info:

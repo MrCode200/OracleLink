@@ -1,4 +1,5 @@
 import numpy as np
+from pandas import Series
 from scipy.signal import argrelextrema
 
 
@@ -16,22 +17,30 @@ def get_nearest_levels(close_price, support_levels, resistance_levels):
     nearest_resistance = min([level for level in resistance_levels if level > close_price], default=None)
     return nearest_support, nearest_resistance
 
-def check_breakout(last_close, nearest_support, nearest_resistance, timestamp):
-    messages = []
-    if nearest_support and last_close < nearest_support:
-        messages.append(f"[{timestamp}] 🔻 Closed BELOW support {nearest_support:.2f} (Close: {last_close:.2f})")
-    if nearest_resistance and last_close > nearest_resistance:
-        messages.append(f"[{timestamp}] 🔺 Closed ABOVE resistance {nearest_resistance:.2f} (Close: {last_close:.2f})")
-    return messages
+def check_breakout(last_close, nearest_support, nearest_resistance, close_time) -> dict[str, float | str] | None:
+    breakout_info: dict[str, float | str] = {
+        'support': nearest_support,
+        'resistance': nearest_resistance,
+        'direction': None,
+        'price': last_close,
+        'time': close_time
+    }
 
-def breackout(df):
+    if nearest_support and last_close < nearest_support:
+        breakout_info['direction'] = 'below'
+    elif nearest_resistance and last_close > nearest_resistance:
+        breakout_info['direction'] = 'above'
+    else:
+        return None
+
+    return breakout_info
+
+def breakout(df) -> dict[str, float | str] | None:
     support, resistance = detect_support_resistance(df.iloc[:-1], order=4)
-    last_candle = df.iloc[-2]  # کندل بسته‌شده‌ی آخر
-    last_close = last_candle['Close']
-    timestamp = last_candle['timestamp']
+    last_candle: Series = df.iloc[-2]  # کندل بسته‌شده‌ی آخر
+    last_close: float = last_candle['Close']
+    close_time: str = last_candle['Close Time']
 
     nearest_support, nearest_resistance = support[-1], resistance[-1]
-    alerts = check_breakout(last_close, nearest_support, nearest_resistance, timestamp)
-    if alerts :
-        return alerts
-    return None
+    breakouts: dict[str, float | str] | None = check_breakout(last_close, nearest_support, nearest_resistance, close_time)
+    return breakouts

@@ -5,7 +5,7 @@ from telegram import BotCommand, Update, InlineKeyboardMarkup, InlineKeyboardBut
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, PicklePersistence, \
     CallbackQueryHandler
 
-from breackout import breackout
+from breackout import breakout
 from tradingComponents.Dow import detect_dow_trend, plot_candle_chart
 from .commands import help_command, log_handler
 from apis.binanceApi.fetcher import get_klines
@@ -271,16 +271,16 @@ class OracleLinkBot:
         stt_conf = stt.evaluate(df)
 
         # Breakout
-        alerts: list[str] = breackout(df)
+        breakout_info: dict[str, float | str] | None = breakout(df)
 
-        if stt_conf == 0 and alerts:
+        if stt_conf == 0 or breakout_info:
             return
 
         # Dow
         result, peaks, valleys = detect_dow_trend(df)
-        buf = plot_candle_chart(df, peaks, valleys, result, sma=stt.sma_period, symbol=symbol,
+        buf = plot_candle_chart(df, peaks, valleys, result, breakout_info=breakout_info, sma=stt.sma_period, symbol=symbol,
                                 return_img_buffer=True, show_candles=15)
 
         caption: str = f"STT: {stt_conf}\n"
-        caption += "\n".join(alerts)
+        caption += f"Breakout: {breakout_info}\n"
         await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=caption)
