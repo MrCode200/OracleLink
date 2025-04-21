@@ -8,7 +8,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 from breackout import breakout
 from tradingComponents.Dow import detect_dow_trend, plot_candle_chart
 from .commands import help_command, log_handler
-from apis.binanceApi.fetcher import get_klines
+from apis.binanceApi.fetcher import fetch_klines
 from tradingComponents.strategies import ShadowsTrendingTouch
 from .utils import parse_interval, seconds_to_next_boundry
 
@@ -18,7 +18,7 @@ parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 stt = ShadowsTrendingTouch(
     sma_period=7,
     shadow_to_body_ratio=1.25,
-    shadow_padding_pips=2,
+    shadow_padding_price=0,
     opposite_shadow_to_body_ratio=0.25
 )
 
@@ -266,7 +266,7 @@ class OracleLinkBot:
         symbol = job_data["symbol"]
 
         # Fetching data
-        df = get_klines(symbol=symbol, interval=interval, limit=75)
+        df = fetch_klines(symbol=symbol, interval=interval, limit=75)
 
         # STT
         stt_conf = stt.evaluate(df)

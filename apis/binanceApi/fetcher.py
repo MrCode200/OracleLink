@@ -1,7 +1,7 @@
 from binance.client import Client
 import pandas as pd
 
-def get_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
+def fetch_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
     """
     Fetches historical kline (candlestick) data from Binance.
 
@@ -42,5 +42,5 @@ def get_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
     return df
 
 if __name__ == '__main__':
-    df = get_klines(symbol='BTCUSDT', interval='1m', limit=100)
+    df = fetch_klines(symbol='BTCUSDT', interval='1m', limit=100)
     print(df.iloc[-1]['Close'])
