@@ -5,7 +5,6 @@ description = "Telegram Bot for Oracle (Trading Bot)"
 authors = ["MrCode200 <navidyaghmaei@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-requires-python = ">=3.13"
 
 [tool.poetry.dependencies]
 python = ">=3.13"
