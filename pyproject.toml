@@ -1,14 +1,14 @@
-[project]
+[tool.poetry]
 name = "OracleLink"
 version = "0.1.0"
 description = "Telegram Bot for Oracle (Trading Bot)"
+authors = ["MrCode200 <navidyaghmaei@gmail.com>"]
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.13"
-license = { text = "MIT" }
-authors = [
-  { name = "MrCode200", email = "navidyaghmaei@gmail.com" }
-]
+
 [tool.poetry.dependencies]
+python = ">=3.13"
 pandas = "^2.2.3"
 ccxt = "^4.4.75"
 matplotlib = "^3.10.1"
