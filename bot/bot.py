@@ -1,10 +1,12 @@
+import atexit
 import logging
 import os
+import asyncio
 from datetime import datetime
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, PicklePersistence, \
-    CallbackQueryHandler
+    CallbackQueryHandler, Application
 
 from tradingComponents.patterns.breackout import breakout
 from tradingComponents.Dow import detect_dow_trend, plot_candle_chart
@@ -25,8 +27,12 @@ stt = ShadowsTrendingTouch(
 
 class OracleLinkBot:
     def __init__(self, token):
-        persistence = PicklePersistence(filepath=f'{parent_dir}/data/userData/oracle_link_bot.pkl')
-        self.app = ApplicationBuilder().token(token).persistence(persistence).build()
+        self.persistence = PicklePersistence(filepath=f'{parent_dir}/data/userData/oracle_link_bot.pkl')
+        self.app: Application = (ApplicationBuilder().
+                                 token(token).
+                                 persistence(self.persistence).
+                                 post_shutdown(self.on_shutdown).
+                                 build())
         self.startup_time = datetime.now()
 
     def run(self):
@@ -51,7 +57,16 @@ class OracleLinkBot:
         user_data = context.user_data
         running = user_data.get('running', False)
         job_count = len(context.job_queue.jobs())
-        await update.message.reply_text(f"🕑 Last startup: {self.startup_time}\n"
+
+        # Calculate the time difference
+        delta = datetime.now() - self.startup_time
+        hours, remainder = divmod(delta.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        # Format the duration
+        formatted_delta = f"{delta.days}d {hours:02}:{minutes:02}:{seconds:02}"
+
+        await update.message.reply_text(f"🕑 Last startup: {formatted_delta}\n"
                                         f"🏃 Running {job_count} jobs: {running}")
 
     async def add_symbol(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -296,3 +311,14 @@ class OracleLinkBot:
         for key, value in breakout_info.items():
             caption += f"{key}: {value}\n"
         await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=caption)
+
+    async def on_shutdown(self, application: Application):
+        logger.info("Shutting down...")
+        all_user_data: dict = await self.persistence.get_user_data()
+
+        for user_id, user_data in all_user_data.items():
+            user_data['running'] = False
+
+        # Use the application's persistence instead of self.app
+        await application.persistence.flush()
+        logger.info("Successfully shut down.")
