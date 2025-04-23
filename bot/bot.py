@@ -62,7 +62,8 @@ class OracleLinkBot:
     async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data = context.user_data
         running = user_data.get('running', False)
-        job_count = len(context.job_queue.jobs())
+
+        total_job_count = len(context.job_queue.jobs())
 
         # Calculate the time difference
         delta = datetime.now() - self.startup_time
@@ -73,7 +74,7 @@ class OracleLinkBot:
         formatted_delta = f"{delta.days}d {hours:02}:{minutes:02}:{seconds:02}"
 
         await update.message.reply_text(f"🕑 Last startup: {formatted_delta}\n"
-                                        f"🏃 Running {job_count} jobs: {running}")
+                                        f"🏃 Running {len(user_data['watchlist'])}/{total_job_count} (user/total) jobs: {running}")
 
     async def add_symbol(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         args = context.args
