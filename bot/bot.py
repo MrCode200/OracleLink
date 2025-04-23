@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, PicklePersistence, \
@@ -7,7 +8,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 
 from tradingComponents.patterns.breackout import breakout
 from tradingComponents.Dow import detect_dow_trend, plot_candle_chart
-from .commands import help_command, log_handler
+from .commands import log_handler
 from apis.binanceApi.fetcher import fetch_klines
 from tradingComponents.strategies import ShadowsTrendingTouch
 from .utils import parse_interval, seconds_to_next_boundry
@@ -26,6 +27,7 @@ class OracleLinkBot:
     def __init__(self, token):
         persistence = PicklePersistence(filepath=f'{parent_dir}/data/userData/oracle_link_bot.pkl')
         self.app = ApplicationBuilder().token(token).persistence(persistence).build()
+        self.startup_time = datetime.now()
 
     def run(self):
         print("🚀 Bot is running...")
@@ -36,7 +38,7 @@ class OracleLinkBot:
         self.app.add_handler(CommandHandler("start", self.start_command))
         self.app.add_handler(CommandHandler("stop", self.stop_command))
         self.app.add_handler(CommandHandler("clear", self.clear_command))
-        self.app.add_handler(CommandHandler("help", help_command))
+        self.app.add_handler(CommandHandler("status", self.status_command))
         self.app.add_handler(CommandHandler("add", self.add_symbol))
         self.app.add_handler(CommandHandler("rmv", self.remove_symbol))
         self.app.add_handler(CommandHandler("list", self.list_watchlist))
@@ -44,6 +46,13 @@ class OracleLinkBot:
         self.app.add_handler(CallbackQueryHandler(self.inline_button_handler))
         # Doesn't work if the command exists
         self.app.add_handler(MessageHandler(filters.COMMAND, log_handler, block=False))
+
+    async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_data = context.user_data
+        running = user_data.get('running', False)
+        job_count = len(context.job_queue.jobs())
+        await update.message.reply_text(f"🕑 Last startup: {self.startup_time}\n"
+                                        f"🏃 Running {job_count} jobs: {running}")
 
     async def add_symbol(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         args = context.args
