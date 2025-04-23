@@ -1,13 +1,12 @@
-import atexit
 import logging
 import os
-import asyncio
 from datetime import datetime
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, PicklePersistence, \
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, \
     CallbackQueryHandler, Application
 
+from .additions import FilteredPersistence
 from tradingComponents.patterns.breackout import breakout
 from tradingComponents.Dow import detect_dow_trend, plot_candle_chart
 from .commands import log_handler
@@ -27,31 +26,38 @@ stt = ShadowsTrendingTouch(
 
 class OracleLinkBot:
     def __init__(self, token):
-        self.persistence = PicklePersistence(filepath=f'{parent_dir}/data/userData/oracle_link_bot.pkl')
+        self.persistence = FilteredPersistence(blacklist_keys=['running'] ,filepath=f'{parent_dir}/data/userData/oracle_link_bot.pkl')
         self.app: Application = (ApplicationBuilder().
                                  token(token).
                                  persistence(self.persistence).
+                                 post_init(self.init_bot).
                                  post_shutdown(self.on_shutdown).
                                  build())
         self.startup_time = datetime.now()
 
     def run(self):
         print("🚀 Bot is running...")
-        self.init_bot()
         self.app.run_polling()
 
-    def init_bot(self):
-        self.app.add_handler(CommandHandler("start", self.start_command))
-        self.app.add_handler(CommandHandler("stop", self.stop_command))
-        self.app.add_handler(CommandHandler("clear", self.clear_command))
-        self.app.add_handler(CommandHandler("status", self.status_command))
-        self.app.add_handler(CommandHandler("add", self.add_symbol))
-        self.app.add_handler(CommandHandler("rmv", self.remove_symbol))
-        self.app.add_handler(CommandHandler("list", self.list_watchlist))
+    async def init_bot(self, application: Application):
+        application.add_handler(CommandHandler("start", self.start_command))
+        application.add_handler(CommandHandler("stop", self.stop_command))
+        application.add_handler(CommandHandler("clear", self.clear_command))
+        application.add_handler(CommandHandler("status", self.status_command))
+        application.add_handler(CommandHandler("add", self.add_symbol))
+        application.add_handler(CommandHandler("rmv", self.remove_symbol))
+        application.add_handler(CommandHandler("list", self.list_watchlist))
 
-        self.app.add_handler(CallbackQueryHandler(self.inline_button_handler))
+        application.add_handler(CallbackQueryHandler(self.inline_button_handler))
         # Doesn't work if the command exists
-        self.app.add_handler(MessageHandler(filters.COMMAND, log_handler, block=False))
+        application.add_handler(MessageHandler(filters.COMMAND, log_handler, block=False))
+
+        all_user_data: dict = await self.persistence.get_user_data()
+        for user_id in all_user_data.keys():
+            await application.bot.send_message(
+                chat_id=user_id,
+                text="🚀 Oracle Link Bot booted... ヾ(≧▽≦*)o"
+            )
 
     async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data = context.user_data
@@ -317,8 +323,14 @@ class OracleLinkBot:
         all_user_data: dict = await self.persistence.get_user_data()
 
         for user_id, user_data in all_user_data.items():
-            user_data['running'] = False
+            # Notify the user
+            try:
+                await application.bot.send_message(
+                    chat_id=user_id,
+                    text="🔄 Bot is shutting down for maintenance. Your settings will be preserved."
+                )
+            except Exception as e:
+                logger.warning(f"Failed to send shutdown notification to user {user_id}: {e}")
 
-        # Use the application's persistence instead of self.app
         await application.persistence.flush()
         logger.info("Successfully shut down.")
