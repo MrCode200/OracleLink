@@ -274,7 +274,7 @@ class OracleLinkBot:
         # Breakout
         breakout_info: dict[str, float | str] = breakout(df)
 
-        if stt_conf == 0 or breakout_info:
+        if stt_conf == 0 or breakout_info["direction"] is None:
             return
 
         # Dow
