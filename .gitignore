@@ -18,7 +18,7 @@ build/
 *.sublime-workspace
 
 # Environment variables and configuration files
-.env
+.env.secret
 config.py
 config.json
 

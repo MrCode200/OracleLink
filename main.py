@@ -1,7 +1,14 @@
 from logging import DEBUG
+import os
+
+from dotenv import load_dotenv
 
 from custom_logger import setup_logger
 from bot import OracleLinkBot
+
+load_dotenv(dotenv_path='.env.secret')
+
+token: str = os.getenv("TEL_BOT_TOKEN")
 
 def main():
     setup_logger(
@@ -14,7 +21,7 @@ def main():
     )
 
     bot = OracleLinkBot(
-        token = "7749426469:AAG3gSrml8t5mWoYGHrbHBXHmDDsIIki66U"
+        token = token
     )
     bot.run()
 

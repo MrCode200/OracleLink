@@ -1,11 +1,11 @@
 import logging
 import os
 
-from telegram import BotCommand, Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, PicklePersistence, \
     CallbackQueryHandler
 
-from breackout import breakout
+from tradingComponents.patterns.breackout import breakout
 from tradingComponents.Dow import detect_dow_trend, plot_candle_chart
 from .commands import help_command, log_handler
 from apis.binanceApi.fetcher import fetch_klines
