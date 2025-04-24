@@ -18,7 +18,7 @@ logger = logging.getLogger("oracle.link")
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 stt = ShadowsTrendingTouch(
-    sma_period=7,
+    sma_period=20,
     shadow_to_body_ratio=1.25,
     shadow_padding_price=0,
     opposite_shadow_to_body_ratio=0.25
