@@ -44,9 +44,9 @@ class OracleLinkBot:
         application.add_handler(CommandHandler("stop", self.stop_command))
         application.add_handler(CommandHandler("clear", self.clear_command))
         application.add_handler(CommandHandler("status", self.status_command))
-        application.add_handler(CommandHandler("add", self.add_symbol))
-        application.add_handler(CommandHandler("rmv", self.remove_symbol))
-        application.add_handler(CommandHandler("list", self.list_watchlist))
+        application.add_handler(CommandHandler("add", self.add_symbol_command))
+        application.add_handler(CommandHandler("rmv", self.remove_symbol_command))
+        application.add_handler(CommandHandler("list", self.list_watchlist_command))
 
         application.add_handler(CallbackQueryHandler(self.inline_button_handler))
         # Doesn't work if the command exists
@@ -76,7 +76,7 @@ class OracleLinkBot:
         await update.message.reply_text(f"🕑 Last startup: {formatted_delta}\n"
                                         f"🏃 Running {len(user_data['watchlist'])}/{total_job_count} (user/total) jobs: {running}")
 
-    async def add_symbol(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def add_symbol_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         args = context.args
         if len(args) != 2:
             await update.message.reply_text("Usage: /add <symbol> <timeframe>")
@@ -102,7 +102,7 @@ class OracleLinkBot:
         watchlist.append((symbol, timeframe))
         await update.message.reply_text(f"✅ Added {symbol} ({timeframe}) to watchlist")
 
-    async def list_watchlist(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def list_watchlist_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /list command, showing sorted watchlist"""
 
         watchlist = context.user_data.get('watchlist', [])
@@ -127,7 +127,7 @@ class OracleLinkBot:
 
         await update.message.reply_text(message, parse_mode="HTML")
 
-    async def remove_symbol(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def remove_symbol_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data = context.user_data
         watchlist = user_data.get('watchlist', [])
 
