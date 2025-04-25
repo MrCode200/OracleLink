@@ -1,5 +1,9 @@
 from pandas import DataFrame
 from pandas_ta import sma as create_sma
+import logging
+
+logger = logging.getLogger("oracle.link")
+
 
 ### Return stop based on shadow size
 
@@ -20,12 +24,14 @@ class ShadowsTrendingTouch:
         last_candle = self_df.iloc[-1]
         sma = create_sma(close=self_df.Close, length=self.sma_period)
 
-        # Candle Body doesn't touch SMA
-        if last_candle.Open < sma.iloc[-1] < last_candle.Close:
-            return 0
-
         candle_above_sma = last_candle.Close > sma.iloc[-1]
         bullish_candle = last_candle.Open < last_candle.Close
+
+        # Candle Body doesn't touch SMA
+        body_max: float = max(last_candle.Open, last_candle.Close)
+        body_min: float = min(last_candle.Open, last_candle.Close)
+        if body_min < sma.iloc[-1] < body_max:
+            return 0
 
         # Bullish candle and above sma OR Bearish candle and below sma
         if bullish_candle != candle_above_sma:
@@ -41,6 +47,8 @@ class ShadowsTrendingTouch:
 
         # Shadow to Body Ratio is big enough
         body_size = abs(last_candle.Open - last_candle.Close)
+        if body_size == 0:
+            logger.warning(f"Body size is 0, may be a doji candle. {last_candle}")
         if shadows_touch_size / body_size < self.shadow_to_body_ratio: # Green Close to High, Red Close to Low
             return 0
 
