@@ -166,10 +166,6 @@ class OracleLinkBot:
         chat_id = update.effective_chat.id
         user_data['running'] = True
 
-        # Stop any existing jobs first
-        if context.job_queue:
-            context.job_queue.stop()
-
         for symbol, interval_str in watchlist:
             interval_sec: int = parse_interval(interval_str)
             delay: float = seconds_to_next_boundry(interval_sec)
@@ -201,8 +197,9 @@ class OracleLinkBot:
         user_data['running'] = False
 
         # Stop all jobs
-        if context.job_queue:
-            context.job_queue.stop()
+        for job in context.job_queue.jobs():
+            if job.data['user_id'] == update.effective_user.id:
+                job.schedule_removal()
 
         await update.message.reply_text(
             "🛑 Stopped watching your symbols. (_　_)。゜zｚＺ\n"
