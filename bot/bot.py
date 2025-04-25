@@ -302,6 +302,8 @@ class OracleLinkBot:
 
         # Fetching data
         df = fetch_klines(symbol=symbol, interval=interval, limit=75)
+        if df.iloc[-1]['Close'] == df.iloc[-1]['Open']:
+            df = df.iloc[:-1]
 
         # STT
         stt_conf = stt.evaluate(df)
