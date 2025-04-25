@@ -25,13 +25,13 @@ stt = ShadowsTrendingTouch(
 )
 
 class OracleLinkBot:
-    def __init__(self, token):
+    def __init__(self, token: str):
         self.persistence = FilteredPersistence(blacklist_keys=['running'] ,filepath=f'{parent_dir}/data/userData/oracle_link_bot.pkl')
         self.app: Application = (ApplicationBuilder().
                                  token(token).
                                  persistence(self.persistence).
-                                 post_init(self.init_bot).
-                                 post_shutdown(self.on_shutdown).
+                                 post_init(self.post_init).
+                                 post_stop(self.post_stop).
                                  build())
         self.startup_time = datetime.now()
 
@@ -39,7 +39,7 @@ class OracleLinkBot:
         print("🚀 Bot is running...")
         self.app.run_polling()
 
-    async def init_bot(self, application: Application):
+    async def post_init(self, application: Application):
         application.add_handler(CommandHandler("start", self.start_command))
         application.add_handler(CommandHandler("stop", self.stop_command))
         application.add_handler(CommandHandler("clear", self.clear_command))
@@ -64,6 +64,8 @@ class OracleLinkBot:
         running = user_data.get('running', False)
 
         total_job_count = len(context.job_queue.jobs())
+        user_running_job_count = len(user_data.get('watchlist', [])) if total_job_count != 0 else 0
+
 
         # Calculate the time difference
         delta = datetime.now() - self.startup_time
@@ -74,7 +76,7 @@ class OracleLinkBot:
         formatted_delta = f"{delta.days}d {hours:02}:{minutes:02}:{seconds:02}"
 
         await update.message.reply_text(f"🕑 Last startup: {formatted_delta}\n"
-                                        f"🏃 Running {len(user_data['watchlist'])}/{total_job_count} (user/total) jobs: {running}")
+                                        f"🏃 Running {user_running_job_count}/{total_job_count} (user_jobs/total_jobs) jobs: {running}")
 
     async def add_symbol_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         args = context.args
@@ -305,8 +307,8 @@ class OracleLinkBot:
         # Breakout
         breakout_info: dict[str, float | str] = breakout(df)
 
-        if stt_conf == 0 or breakout_info["direction"] is None:
-            return
+        #if stt_conf == 0 or breakout_info["direction"] is None:
+        #    return
 
         # Dow
         result, peaks, valleys = detect_dow_trend(df)
@@ -319,12 +321,11 @@ class OracleLinkBot:
             caption += f"{key}: {value}\n"
         await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=caption)
 
-    async def on_shutdown(self, application: Application):
+    async def post_stop(self, application: Application):
         logger.info("Shutting down...")
         all_user_data: dict = await self.persistence.get_user_data()
 
         for user_id, user_data in all_user_data.items():
-            # Notify the user
             try:
                 await application.bot.send_message(
                     chat_id=user_id,
