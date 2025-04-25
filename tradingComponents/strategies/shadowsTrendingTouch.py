@@ -47,8 +47,6 @@ class ShadowsTrendingTouch:
 
         # Shadow to Body Ratio is big enough
         body_size = abs(last_candle.Open - last_candle.Close)
-        if body_size == 0:
-            logger.warning(f"Body size is 0, may be a doji candle. {last_candle}")
         if shadows_touch_size / body_size < self.shadow_to_body_ratio: # Green Close to High, Red Close to Low
             return 0
 
