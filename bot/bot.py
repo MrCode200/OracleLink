@@ -174,7 +174,12 @@ class OracleLinkBot:
                 self.scheduled_job,
                 interval=interval_sec,
                 first=delay,
-                data={'chat_id': chat_id, 'symbol': symbol, 'interval': interval_str}
+                data={
+                    'chat_id': chat_id,
+                    'user_id': update.effective_user.id,
+                    'symbol': symbol,
+                    'interval': interval_str
+                }
             )
 
         await update.message.reply_text(
