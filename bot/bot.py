@@ -65,7 +65,7 @@ class OracleLinkBot:
         running = user_data.get('running', False)
 
         total_job_count = len(context.job_queue.jobs())
-        user_running_job_count = len(user_data.get('watchlist', [])) if total_job_count != 0 else 0
+        user_running_job_count = len(user_data.get('watchlist', []))
 
 
         # Calculate the time difference
@@ -302,9 +302,9 @@ class OracleLinkBot:
         symbol = job_data["symbol"]
 
         # Fetching data
-        df = fetch_klines(symbol=symbol, interval=interval, limit=75)
         # Due to random delays we delay for new candle and remove it
         time.sleep(2)
+        df = fetch_klines(symbol=symbol, interval=interval, limit=75)
         df = df.iloc[:-1]
 
         # STT
