@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from datetime import datetime
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
@@ -302,8 +303,9 @@ class OracleLinkBot:
 
         # Fetching data
         df = fetch_klines(symbol=symbol, interval=interval, limit=75)
-        if df.iloc[-1]['Close'] == df.iloc[-1]['Open']:
-            df = df.iloc[:-1]
+        # Due to random delays we delay for new candle and remove it
+        time.sleep(2)
+        df = df.iloc[:-1]
 
         # STT
         stt_conf = stt.evaluate(df)
