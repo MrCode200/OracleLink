@@ -22,7 +22,7 @@ stt = ShadowsTrendingTouch(
     sma_period=7,
     shadow_to_body_ratio=1.25,
     shadow_padding_price=0,
-    opposite_shadow_to_body_ratio=0.25
+    opposite_shadow_to_body_ratio_limit=0.25
 )
 
 class OracleLinkBot:
@@ -308,7 +308,7 @@ class OracleLinkBot:
         df = df.iloc[:-1]
 
         # STT
-        stt_conf = stt.evaluate(df)
+        stt_conf, stt_data = stt.evaluate(df)
 
         # Breakout
         breakout_info: dict[str, float | str] = breakout(df)
@@ -321,10 +321,16 @@ class OracleLinkBot:
         buf = plot_candle_chart(df, peaks, valleys, result, breakout_info=breakout_info, sma=stt.sma_period, symbol=symbol,
                                 return_img_buffer=True, show_candles=15)
 
-        caption: str = (f"STT: {stt_conf}\n"
-                        f"Breakout: \n")
+        caption: str = f"STT: {stt_conf}\n"
+        for key, value in stt_data.items():
+            caption += f"{key}: {value}\n"
+
+        caption += "Breakout:\n"
         for key, value in breakout_info.items():
             caption += f"{key}: {value}\n"
+
+
+
         await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=caption)
 
     async def post_stop(self, application: Application):
