@@ -21,7 +21,7 @@ parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 stt = ShadowsTrendingTouch(
     sma_period=7,
     shadow_to_body_ratio=1.25,
-    percentage_to_shadow_padding=0,
+    shadow_multiplier=0,
     opposite_shadow_to_body_ratio_limit=0.25
 )
 

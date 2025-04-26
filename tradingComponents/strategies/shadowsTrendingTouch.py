@@ -9,12 +9,19 @@ logger = logging.getLogger("oracle.link")
 ### Return stop based on shadow size
 
 class ShadowsTrendingTouch:
-    def __init__(self, sma_period: Optional[int] = 7, shadow_to_body_ratio: float = 1.25,
-                 percentage_to_shadow_padding: int = 2, opposite_shadow_to_body_ratio_limit: Optional[float] = 0.25):
+    def __init__(
+            self,
+            sma_period: int = 7,
+            shadow_to_body_ratio: float = 1.25,
+            shadow_multiplier: int = 2,
+            opposite_shadow_to_body_ratio_limit: Optional[float] = 0.25,
+            ignore_sma_touch: bool = False
+    ):
         self.sma_period = sma_period
         self.shadow_to_body_ratio = shadow_to_body_ratio
-        self.percentage_to_shadow_padding = percentage_to_shadow_padding
-        self.opposite_shadow_to_body_ratio_limit = opposite_shadow_to_body_ratio_limit
+        self.shadow_multiplier = shadow_multiplier
+        self.opposite_shadow_to_body_ratio_limit = opposite_shadow_to_body_ratio_limit # shadow multiplier
+        self.ignore_sma_touch: bool = ignore_sma_touch
 
     def evaluate(self, df: DataFrame) -> float:
         valid_df_range: int = self.sma_period + 1
@@ -28,19 +35,18 @@ class ShadowsTrendingTouch:
         body_size = abs(last_candle.Open - last_candle.Close)
 
         # Candle Body doesn't touch SMA
-        if self.sma_period is not None:
-            sma = create_sma(close=self_df.Close, length=self.sma_period)
-            candle_above_sma = last_candle.Close > sma.iloc[-1]
+        sma = create_sma(close=self_df.Close, length=self.sma_period)
+        candle_above_sma = last_candle.Close > sma.iloc[-1]
 
-            body_max: float = max(last_candle.Open, last_candle.Close)
-            body_min: float = min(last_candle.Open, last_candle.Close)
+        body_max: float = max(last_candle.Open, last_candle.Close)
+        body_min: float = min(last_candle.Open, last_candle.Close)
 
-            if body_min < sma.iloc[-1] < body_max:
-                return 0, {"Touch": True}
+        if body_min < sma.iloc[-1] < body_max:
+            return 0, {"Touch": True}
 
-            # Bullish candle and above sma OR Bearish candle and below sma
-            if bullish_candle != candle_above_sma:
-                return 0, {"Correct Position": False}
+        # Bullish candle and above sma OR Bearish candle and below sma
+        if bullish_candle != candle_above_sma:
+            return 0, {"Correct Position": False}
 
         # Find Shadow Touching Size
         if bullish_candle:
@@ -60,11 +66,11 @@ class ShadowsTrendingTouch:
                 opposite_shadow_size / body_size > self.opposite_shadow_to_body_ratio_limit):
             return 0, {"Opposite Shadow to Body Ratio": False, "Ratio": f"{opposite_shadow_size / body_size}"} # DEBUG: data
 
-        if self.sma_period is None:
+        if self.ignore_sma_touch:
             return 1, {} if bullish_candle else -1, {}
 
         # Check candles touching
-        padding: float = self.percentage_to_shadow_padding * last_candle.Close
+        padding: float = self.shadow_multiplier * shadows_touch_size
         if bullish_candle:
             if last_candle.Low - padding <= sma.iloc[-1]:
                 return 1, {} # DEBUG: data
