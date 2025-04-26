@@ -325,7 +325,7 @@ class OracleLinkBot:
         for key, value in stt_data.items():
             caption += f"{key}: {value}\n"
 
-        caption += "Breakout:\n"
+        caption += "\nBreakout:\n"
         for key, value in breakout_info.items():
             caption += f"{key}: {value}\n"
 

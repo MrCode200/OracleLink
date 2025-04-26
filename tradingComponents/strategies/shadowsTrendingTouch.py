@@ -37,7 +37,7 @@ class ShadowsTrendingTouch:
 
         # Bullish candle and above sma OR Bearish candle and below sma
         if bullish_candle != candle_above_sma:
-            return 0, {"Correct Position": True}
+            return 0, {"Correct Position": False}
 
         # Find Shadow Touching Size
         if bullish_candle:
@@ -57,12 +57,12 @@ class ShadowsTrendingTouch:
 
         # Shadow to Body Ratio is big enough
         if shadows_touch_size / body_size < self.shadow_to_body_ratio: # Green Close to High, Red Close to Low
-            return 0, data # DEBUG: data
+            return 0, data | {"Shadow to Body Ratio": False} # DEBUG: data
 
         # Opposite shadow small enough
         if (self.opposite_shadow_to_body_ratio_limit is not None and
                 opposite_shadow_size / body_size > self.opposite_shadow_to_body_ratio_limit):
-            return 0, data # DEBUG: data
+            return 0, data | {"Opposite Shadow to Body Ratio": False} # DEBUG: data
 
         # Check candles touching
         if bullish_candle:
@@ -72,4 +72,4 @@ class ShadowsTrendingTouch:
             if last_candle.High + self.shadow_padding_price >= sma.iloc[-1]:
                 return -1, data # DEBUG: data
 
-        return 0, data # DEBUG: data
+        return 0, data | {"Shadow Touch SMA": False} # DEBUG: data
