@@ -321,15 +321,14 @@ class OracleLinkBot:
         buf = plot_candle_chart(df, peaks, valleys, result, breakout_info=breakout_info, sma=stt.sma_period, symbol=symbol,
                                 return_img_buffer=True, show_candles=15)
 
-        caption: str = f"STT: {stt_conf}\n"
+        caption: str = f"{symbol}-{interval}\n\n"
+        caption = f"STT: {stt_conf}\n"
         for key, value in stt_data.items():
             caption += f"{key}: {value}\n"
 
         caption += "\nBreakout:\n"
         for key, value in breakout_info.items():
             caption += f"{key}: {value}\n"
-
-
 
         await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=caption)
 

@@ -47,29 +47,22 @@ class ShadowsTrendingTouch:
             shadows_touch_size = last_candle.High - last_candle.Close
             opposite_shadow_size = last_candle.Open - last_candle.Low
 
-        # ----------- DEBUG ------------
-        data: dict[str, float] = {
-            "body_size": body_size,
-            "shadow_to_body_ratio": shadows_touch_size / body_size,
-            "opposite_shadow_to_body_ratio": opposite_shadow_size / body_size
-        }
-        # ------------ DEBUG ------------
 
         # Shadow to Body Ratio is big enough
         if shadows_touch_size / body_size < self.shadow_to_body_ratio: # Green Close to High, Red Close to Low
-            return 0, data | {"Shadow to Body Ratio": False} # DEBUG: data
+            return 0, {"Shadow to Body Ratio": False, "Ratio": f"{shadows_touch_size / body_size}"} # DEBUG: data
 
         # Opposite shadow small enough
         if (self.opposite_shadow_to_body_ratio_limit is not None and
                 opposite_shadow_size / body_size > self.opposite_shadow_to_body_ratio_limit):
-            return 0, data | {"Opposite Shadow to Body Ratio": False} # DEBUG: data
+            return 0, {"Opposite Shadow to Body Ratio": False, "Ratio": f"{opposite_shadow_size / body_size}"} # DEBUG: data
 
         # Check candles touching
         if bullish_candle:
             if last_candle.Low - self.shadow_padding_price <= sma.iloc[-1]:
-                return 1, data # DEBUG: data
+                return 1 # DEBUG: data
         else:
             if last_candle.High + self.shadow_padding_price >= sma.iloc[-1]:
-                return -1, data # DEBUG: data
+                return -1 # DEBUG: data
 
-        return 0, data | {"Shadow Touch SMA": False} # DEBUG: data
+        return 0, {"Shadow Touch SMA": False, "SMA_LAST": f"{sma.iloc[-1]}, LOW: {last_candle.Low}, HIGH: {last_candle.High}"} # DEBUG: data
