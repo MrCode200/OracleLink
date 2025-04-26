@@ -13,7 +13,7 @@ class ShadowsTrendingTouch:
             self,
             sma_period: int = 7,
             shadow_to_body_ratio: float = 1.25,
-            shadow_multiplier: int = 2,
+            shadow_multiplier: int = 1,
             opposite_shadow_to_body_ratio_limit: Optional[float] = 0.25,
             ignore_sma_touch: bool = False
     ):
