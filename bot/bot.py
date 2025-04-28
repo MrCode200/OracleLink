@@ -49,6 +49,7 @@ class OracleLinkBot:
         application.add_handler(CommandHandler("add", self.add_symbol_command))
         application.add_handler(CommandHandler("rmv", self.remove_symbol_command))
         application.add_handler(CommandHandler("list", self.list_watchlist_command))
+        application.add_handler(CommandHandler("mydata", self.my_data_command)) # For debugging
 
         application.add_handler(CallbackQueryHandler(self.inline_button_handler))
         # Doesn't work if the command exists
@@ -60,6 +61,9 @@ class OracleLinkBot:
                 chat_id=user_id,
                 text="🚀 Oracle Link Bot booted... ヾ(≧▽≦*)o"
             )
+
+    async def my_data_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE): # For debugging
+        await update.message.reply_text("My data: {}".format(context.user_data))
 
     async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data = context.user_data
