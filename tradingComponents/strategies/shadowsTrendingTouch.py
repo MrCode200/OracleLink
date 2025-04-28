@@ -63,10 +63,12 @@ class ShadowsTrendingTouch:
             "Low": last_candle.Low,
             "Close": last_candle.Close,
             "Open": last_candle.Open,
+            "ShadowSize": shadows_touch_size,
             "ShadowBodyRatio": shadows_touch_size / body_size,
-            "ShadowBodyRatioValid": shadows_touch_size / body_size < self.shadow_to_body_ratio,
+            "ShadowBodyRatioValid": shadows_touch_size / body_size >= self.shadow_to_body_ratio,
+            "OppositeShadowSize": opposite_shadow_size,
             "OppositeShadowBodyRatio": opposite_shadow_size / body_size,
-            "OppositeShadowBodyRatioValid": opposite_shadow_size / body_size < self.shadow_to_body_ratio
+            "OppositeShadowBodyRatioValid": opposite_shadow_size / body_size <= self.shadow_to_body_ratio
         }
         if shadows_touch_size / body_size < self.shadow_to_body_ratio: # Green Close to High, Red Close to Low
             return 0, debug_data # DEBUG: data

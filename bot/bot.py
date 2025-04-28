@@ -317,13 +317,13 @@ class OracleLinkBot:
         # Breakout
         breakout_info: dict[str, float | str] = breakout(df)
 
-        #if stt_conf == 0 or breakout_info["direction"] is None:
-        #    return
+        if stt_conf == 0 or breakout_info["direction"] is None:
+            return
 
         # Dow
         result, peaks, valleys = detect_dow_trend(df)
         buf = plot_candle_chart(df, peaks, valleys, result, breakout_info=breakout_info, sma=stt.sma_period, symbol=symbol,
-                                return_img_buffer=True, show_candles=15)
+                                return_img_buffer=True, show_candles=25)
 
         caption: str = f"{symbol}-{interval}\n\n"
         caption = f"STT: {stt_conf}\n"
