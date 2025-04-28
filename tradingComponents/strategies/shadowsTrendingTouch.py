@@ -54,28 +54,38 @@ class ShadowsTrendingTouch:
             opposite_shadow_size = last_candle.High - last_candle.Close
         else:
             shadows_touch_size = last_candle.High - last_candle.Close
-            opposite_shadow_size = last_candle.Open - last_candle.Low
+            opposite_shadow_size = last_candle.Close - last_candle.Low
 
 
         # Shadow to Body Ratio is big enough
+        debug_data = {
+            "High": last_candle.High,
+            "Low": last_candle.Low,
+            "Close": last_candle.Close,
+            "Open": last_candle.Open,
+            "ShadowBodyRatio": shadows_touch_size / body_size,
+            "ShadowBodyRatioValid": shadows_touch_size / body_size < self.shadow_to_body_ratio,
+            "OppositeShadowBodyRatio": opposite_shadow_size / body_size,
+            "OppositeShadowBodyRatioValid": opposite_shadow_size / body_size < self.shadow_to_body_ratio
+        }
         if shadows_touch_size / body_size < self.shadow_to_body_ratio: # Green Close to High, Red Close to Low
-            return 0, {"Shadow to Body Ratio": False, "Ratio": f"{shadows_touch_size / body_size}"} # DEBUG: data
+            return 0, debug_data # DEBUG: data
 
         # Opposite shadow small enough
         if (self.opposite_shadow_to_body_ratio_limit is not None and
                 opposite_shadow_size / body_size > self.opposite_shadow_to_body_ratio_limit):
-            return 0, {"Opposite Shadow to Body Ratio": False, "Ratio": f"{opposite_shadow_size / body_size}"} # DEBUG: data
+            return 0, debug_data # DEBUG: data
 
         if self.ignore_sma_touch:
-            return 1, {} if bullish_candle else -1, {}
+            return 1 if bullish_candle else -1, debug_data
 
-        # Check candles touching
+        # Check candles shadow is touching SMA
         padding: float = self.shadow_multiplier * shadows_touch_size
         if bullish_candle:
             if last_candle.Low - padding <= sma.iloc[-1]:
-                return 1, {} # DEBUG: data
+                return 1, debug_data # DEBUG: data
         else:
             if last_candle.High + padding >= sma.iloc[-1]:
-                return -1, {} # DEBUG: data
+                return -1, debug_data # DEBUG: data
 
-        return 0, {"Shadow Touch SMA": False, "SMA_LAST": f"{sma.iloc[-1]}, LOW: {last_candle.Low}, HIGH: {last_candle.High}"} # DEBUG: data
+        return 0, debug_data # DEBUG: data

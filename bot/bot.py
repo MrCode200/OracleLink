@@ -22,7 +22,7 @@ stt = ShadowsTrendingTouch(
     sma_period=7,
     shadow_to_body_ratio=1.25,
     shadow_multiplier=1,
-    opposite_shadow_to_body_ratio_limit=0.5,
+    opposite_shadow_to_body_ratio_limit=5.5,
     ignore_sma_touch=True
 )
 
@@ -67,7 +67,6 @@ class OracleLinkBot:
 
         total_job_count = len(context.job_queue.jobs())
         user_running_job_count = len(user_data.get('watchlist', []))
-
 
         # Calculate the time difference
         delta = datetime.now() - self.startup_time
