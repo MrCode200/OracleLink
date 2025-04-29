@@ -337,8 +337,8 @@ class OracleLinkBot:
 
             await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=caption)
         except Exception as e:
-            logger.error(e)
             await context.bot.send_message(chat_id=chat_id, text=f"Error: {e}")
+            raise
 
     async def post_stop(self, application: Application):
         logger.info("Shutting down...")
