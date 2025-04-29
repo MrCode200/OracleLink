@@ -35,11 +35,10 @@ def fetch_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
 
     period_to_fetch = None
     start_date = None
-    end_date = datetime.now() # Fetch up to today
+    end_date = datetime.now()
 
-    # Intraday data has limitations on historical reach
     intraday_short_limit = ['2m', '5m', '15m', '30m'] # Typically limited to 60 days
-    intraday_medium_limit = ['60m', '90m', '1h']           # Typically limited to 730 days
+    intraday_medium_limit = ['60m', '90m', '1h'] # Typically limited to 730 days
 
     if interval == '1m':
          period_to_fetch = '7d'  # Yahoo Finance limits 1m data to 8 days, use 7 for safety
@@ -87,13 +86,12 @@ def fetch_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
             data = yf.download(symbol, interval=interval)
 
         # --- Process Data ---
-        if data is None or data.empty or len(data) < 2:  # Need at least 2 candles for SMA calculation
+        if data is None or data.empty:
             logger.error(f"Failed to fetch valid data for {symbol}. Got empty or insufficient data.")
             raise Exception(f"Failed to fetch {symbol} data: insufficient data points")
 
-        # For Yahoo Finance, flatten the multi-level columns and get just the values
         if isinstance(data.columns, pd.MultiIndex):
-            data.columns = [col[0] for col in data.columns]  # Take first level which has Open, High, Low, etc.
+            data.columns = [col[0] for col in data.columns]  # Flatten, due to multilevel return values
         
         data = data.tail(limit)
         return data
@@ -113,7 +111,7 @@ if __name__ == '__main__':
     print(df.iloc[-1]['Close'])  # Using square brackets for more reliable access
     
     print("\nFull last row:")
-    print(df.Close)  # For verification
+    print(df.columns)  # For verification
     
     from pandas_ta import sma as create_sma
     print("\nSMA calculation:")
