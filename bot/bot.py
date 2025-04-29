@@ -311,6 +311,11 @@ class OracleLinkBot:
             time.sleep(2)
             df = fetch_klines(symbol=symbol, interval=interval, limit=75)
             df = df.iloc[:-1]
+            if df.empty:
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=f"{df}"
+                )
 
             # STT
             stt_conf, stt_data = stt.evaluate(df)
