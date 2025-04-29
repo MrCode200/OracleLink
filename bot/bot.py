@@ -11,7 +11,7 @@ from .additions import FilteredPersistence
 from tradingComponents.patterns.breackout import breakout
 from tradingComponents.Dow import detect_dow_trend, plot_candle_chart
 from .commands import log_handler
-from apis.binanceApi.fetcher import fetch_klines
+from apis.yahooAPI.fetcher import fetch_klines
 from tradingComponents.strategies import ShadowsTrendingTouch
 from .utils import parse_interval, seconds_to_next_boundry
 
