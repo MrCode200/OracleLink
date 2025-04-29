@@ -68,56 +68,67 @@ def fetch_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
 
     # --- Fetch Data ---
     logger.debug(f"Fetching {symbol} data: Interval={interval}, Limit={limit} (Derived Period='{period_to_fetch}', Start='{start_date}')")
-    if period_to_fetch:
-        data = yf.download(
-            tickers=symbol,
-            period=period_to_fetch,
-            interval=interval,
-            auto_adjust=False,  # Get raw OHLCV
-            progress=False,     # Disable progress bar
-            ignore_tz=False     # Keep timezone info if available
-        )
-    elif start_date:
-         data = yf.download(
-            tickers=symbol,
-            start=start_date,
-            end=end_date.strftime('%Y-%m-%d'),
-            interval=interval,
-            auto_adjust=False,
-            progress=False,
-            ignore_tz=False
-        )
-    else:
-        logger.warning(f"Warning: Could not determine optimal fetch period for interval '{interval}'. Fetching 'max'")
-        data = yf.download(symbol, interval=interval, auto_adjust=False, progress=False, ignore_tz=False)
-
-    # --- Process Data ---
-    if data.empty:
-        raise Exception(f"Failed to fetch {symbol} data.")
-
-    # Select the most recent 'limit' data points
-    data = data.tail(limit)
-
-    data.index.name = 'Open Time'
-
-    required_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
-    output_columns = []
-
-    for col in required_columns:
-        if col in data.columns:
-            output_columns.append(col)
-            if col == 'Volume':
-                 data[col] = data[col].astype(float)
+    try:
+        if period_to_fetch:
+            data = yf.download(
+                tickers=symbol,
+                period=period_to_fetch,
+                interval=interval,
+                auto_adjust=False,  # Get raw OHLCV
+                progress=False,     # Disable progress bar
+                ignore_tz=False     # Keep timezone info if available
+            )
+        elif start_date:
+            data = yf.download(
+                tickers=symbol,
+                start=start_date,
+                end=end_date.strftime('%Y-%m-%d'),
+                interval=interval,
+                auto_adjust=False,
+                progress=False,
+                ignore_tz=False
+            )
         else:
-            logger.warning(f"Column '{col}' not found in fetched data for {symbol}.")
+            logger.warning(f"Warning: Could not determine optimal fetch period for interval '{interval}'. Fetching 'max'")
+            data = yf.download(symbol, interval=interval, auto_adjust=False, progress=False, ignore_tz=False)
 
-    # Keep only the required columns in the standard order
-    if not output_columns:
-        raise Exception("Error: No standard OHLCV columns found in the fetched data.")
+        # --- Process Data ---
+        if data is None or data.empty or len(data) < 2:  # Need at least 2 candles for SMA calculation
+            logger.error(f"Failed to fetch valid data for {symbol}. Got empty or insufficient data.")
+            raise Exception(f"Failed to fetch {symbol} data: insufficient data points")
 
-    data = data[output_columns]
+        # Select the most recent 'limit' data points
+        data = data.tail(limit)
 
-    return data
+        data.index.name = 'Open Time'
+
+        required_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+        output_columns = []
+
+        for col in required_columns:
+            if col in data.columns:
+                output_columns.append(col)
+                if col == 'Volume':
+                    data[col] = data[col].astype(float)
+            else:
+                logger.warning(f"Column '{col}' not found in fetched data for {symbol}.")
+
+        # Keep only the required columns in the standard order
+        if not output_columns:
+            raise Exception("Error: No standard OHLCV columns found in the fetched data.")
+
+        data = data[output_columns]
+        
+        # Verify we have enough data for SMA calculation
+        if len(data) < 8:  # Minimum required for 7-period SMA
+            raise Exception(f"Insufficient data points for {symbol}: got {len(data)}, need at least 8")
+
+        return data
+
+    except Exception as e:
+        logger.error(f"Error fetching data for {symbol}: {str(e)}")
+        raise Exception(f"Failed to fetch {symbol} data: {str(e)}")
+
 
 if __name__ == '__main__':
     # Example 1: Get latest 100 hours of Apple data
