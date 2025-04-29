@@ -74,9 +74,6 @@ def fetch_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
                 tickers=symbol,
                 period=period_to_fetch,
                 interval=interval,
-                auto_adjust=False,  # Get raw OHLCV
-                progress=False,     # Disable progress bar
-                ignore_tz=False     # Keep timezone info if available
             )
         elif start_date:
             data = yf.download(
@@ -84,97 +81,41 @@ def fetch_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
                 start=start_date,
                 end=end_date.strftime('%Y-%m-%d'),
                 interval=interval,
-                auto_adjust=False,
-                progress=False,
-                ignore_tz=False
             )
         else:
             logger.warning(f"Warning: Could not determine optimal fetch period for interval '{interval}'. Fetching 'max'")
-            data = yf.download(symbol, interval=interval, auto_adjust=False, progress=False, ignore_tz=False)
+            data = yf.download(symbol, interval=interval)
 
         # --- Process Data ---
         if data is None or data.empty or len(data) < 2:  # Need at least 2 candles for SMA calculation
             logger.error(f"Failed to fetch valid data for {symbol}. Got empty or insufficient data.")
             raise Exception(f"Failed to fetch {symbol} data: insufficient data points")
 
-        # Select the most recent 'limit' data points
-        data = data.tail(limit)
-
-        data.index.name = 'Open Time'
-
-        required_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
-        output_columns = []
-
-        for col in required_columns:
-            if col in data.columns:
-                output_columns.append(col)
-                if col == 'Volume':
-                    data[col] = data[col].astype(float)
-            else:
-                logger.warning(f"Column '{col}' not found in fetched data for {symbol}.")
-
-        # Keep only the required columns in the standard order
-        if not output_columns:
-            raise Exception("Error: No standard OHLCV columns found in the fetched data.")
-
-        data = data[output_columns]
+        # For Yahoo Finance, flatten the multi-level columns and get just the values
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns = [col[0] for col in data.columns]  # Take first level which has Open, High, Low, etc.
         
-        # Verify we have enough data for SMA calculation
-        if len(data) < 8:  # Minimum required for 7-period SMA
-            raise Exception(f"Insufficient data points for {symbol}: got {len(data)}, need at least 8")
-
+        data = data.tail(limit)
         return data
 
     except Exception as e:
         logger.error(f"Error fetching data for {symbol}: {str(e)}")
-        raise Exception(f"Failed to fetch {symbol} data: {str(e)}")
+        raise
 
 
 if __name__ == '__main__':
-    # Example 1: Get latest 100 hours of Apple data
-    print("--- Example 1: AAPL 1h ---")
-    aapl_hourly = fetch_klines(symbol='AAPL', interval='1h', limit=100)
-    if not aapl_hourly.empty:
-        print(aapl_hourly.head())
-        print(f"\nShape: {aapl_hourly.shape}")
-        print(f"Index Type: {type(aapl_hourly.index)}")
-        print(f"Data Types:\n{aapl_hourly.dtypes}")
-    else:
-        print("Failed to fetch AAPL hourly data.")
-
-    print("\n" + "="*30 + "\n")
-
-    # Example 2: Get latest 50 daily candles for Bitcoin
-    print("--- Example 2: BTC-USD 1d ---")
-    btc_daily = fetch_klines(symbol='BTC-USD', interval='1d', limit=50)
-    if not btc_daily.empty:
-        print(btc_daily.head())
-        print(f"\nShape: {btc_daily.shape}")
-        print(f"Index Type: {type(btc_daily.index)}")
-        print(f"Data Types:\n{btc_daily.dtypes}")
-    else:
-        print("Failed to fetch BTC-USD daily data.")
-
-    print("\n" + "="*30 + "\n")
-
-    # Example 3: Get latest 60 5-minute candles for Gold Futures
-    print("--- Example 3: GC=F 5m ---")
-    # Note: Intraday data for futures might require specific ticker formats
-    # and might have limited availability depending on your yfinance access/source.
-    gold_5m = fetch_klines(symbol='GC=F', interval='5m', limit=60)
-    if not gold_5m.empty:
-        print(gold_5m.head())
-        print(f"\nShape: {gold_5m.shape}")
-        print(f"Index Type: {type(gold_5m.index)}")
-        print(f"Data Types:\n{gold_5m.dtypes}")
-    else:
-        print("Failed to fetch GC=F 5m data (Intraday futures data can be sparse).")
-
-    print("\n" + "="*30 + "\n")
-
-    # Example 4: Invalid interval
-    print("--- Example 4: Invalid Interval ---")
-    try:
-        fetch_klines(symbol='MSFT', interval='42m', limit=10)
-    except ValueError as e:
-        print(f"Caught expected error: {e}")
+    # Test with BTC-USD to match Binance format
+    print("--- Testing BTC-USD 1m data ---")
+    df = fetch_klines(symbol='BTC-USD', interval='1m', limit=75)
+    print("DataFrame type:", type(df))
+    print("\nColumns:", df.columns)
+    print("\nLast candle close price:")
+    print(df.iloc[-1]['Close'])  # Using square brackets for more reliable access
+    
+    print("\nFull last row:")
+    print(df.Close)  # For verification
+    
+    from pandas_ta import sma as create_sma
+    print("\nSMA calculation:")
+    sma = create_sma(close=df['Close'], length=7)
+    print(sma.iloc[-1])  # Should also return just the float value
