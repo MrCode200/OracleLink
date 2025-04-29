@@ -307,34 +307,38 @@ class OracleLinkBot:
 
         # Fetching data
         # Due to random delays we delay for new candle and remove it
-        time.sleep(2)
-        df = fetch_klines(symbol=symbol, interval=interval, limit=75)
-        df = df.iloc[:-1]
+        try:
+            time.sleep(2)
+            df = fetch_klines(symbol=symbol, interval=interval, limit=75)
+            df = df.iloc[:-1]
 
-        # STT
-        stt_conf, stt_data = stt.evaluate(df)
+            # STT
+            stt_conf, stt_data = stt.evaluate(df)
 
-        # Breakout
-        breakout_info: dict[str, float | str] = breakout(df)
+            # Breakout
+            breakout_info: dict[str, float | str] = breakout(df)
 
-        if stt_conf == 0 or breakout_info["direction"] is None:
-            return
+            if stt_conf == 0 or breakout_info["direction"] is None:
+                return
 
-        # Dow
-        result, peaks, valleys = detect_dow_trend(df)
-        buf = plot_candle_chart(df, peaks, valleys, result, breakout_info=breakout_info, sma=stt.sma_period, symbol=symbol,
-                                return_img_buffer=True, show_candles=25)
+            # Dow
+            result, peaks, valleys = detect_dow_trend(df)
+            buf = plot_candle_chart(df, peaks, valleys, result, breakout_info=breakout_info, sma=stt.sma_period, symbol=symbol,
+                                    return_img_buffer=True, show_candles=25)
 
-        caption: str = f"{symbol}-{interval}\n\n"
-        caption = f"STT: {stt_conf}\n"
-        for key, value in stt_data.items():
-            caption += f"{key}: {value}\n"
+            caption: str = f"{symbol}-{interval}\n\n"
+            caption = f"STT: {stt_conf}\n"
+            for key, value in stt_data.items():
+                caption += f"{key}: {value}\n"
 
-        caption += "\nBreakout:\n"
-        for key, value in breakout_info.items():
-            caption += f"{key}: {value}\n"
+            caption += "\nBreakout:\n"
+            for key, value in breakout_info.items():
+                caption += f"{key}: {value}\n"
 
-        await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=caption)
+            await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=caption)
+        except Exception as e:
+            logger.error(e)
+            await context.bot.send_message(chat_id=chat_id, text=f"Error: {e}")
 
     async def post_stop(self, application: Application):
         logger.info("Shutting down...")

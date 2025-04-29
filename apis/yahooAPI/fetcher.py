@@ -38,10 +38,12 @@ def fetch_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
     end_date = datetime.now() # Fetch up to today
 
     # Intraday data has limitations on historical reach
-    intraday_short_limit = ['1m', '2m', '5m', '15m', '30m'] # Typically limited to 60 days
+    intraday_short_limit = ['2m', '5m', '15m', '30m'] # Typically limited to 60 days
     intraday_medium_limit = ['60m', '90m', '1h']           # Typically limited to 730 days
 
-    if interval in intraday_short_limit:
+    if interval == '1m':
+         period_to_fetch = '7d'  # Yahoo Finance limits 1m data to 8 days, use 7 for safety
+    elif interval in intraday_short_limit:
          period_to_fetch = '60d'
     elif interval in intraday_medium_limit:
          period_to_fetch = '730d'
@@ -117,7 +119,6 @@ def fetch_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
 
     return data
 
-# --- Example Usage ---
 if __name__ == '__main__':
     # Example 1: Get latest 100 hours of Apple data
     print("--- Example 1: AAPL 1h ---")
