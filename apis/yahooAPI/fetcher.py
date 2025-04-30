@@ -3,6 +3,8 @@ import yfinance as yf
 from datetime import datetime, timedelta
 import logging
 
+from pandas import Timestamp
+
 logger = logging.getLogger("oracle.link")
 
 
@@ -103,17 +105,7 @@ def fetch_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
 
 if __name__ == '__main__':
     # Test with BTC-USD to match Binance format
+    from pandas import to_timedelta
     print("--- Testing BTC-USD 1m data ---")
     df = fetch_klines(symbol='BTC-USD', interval='1m', limit=75)
-    print("DataFrame type:", type(df))
-    print("\nColumns:", df.columns)
-    print("\nLast candle close price:")
-    print(df.iloc[-1]['Close'])  # Using square brackets for more reliable access
-    
-    print("\nFull last row:")
-    print(df.columns)  # For verification
-    
-    from pandas_ta import sma as create_sma
-    print("\nSMA calculation:")
-    sma = create_sma(close=df['Close'], length=7)
-    print(sma.iloc[-1])  # Should also return just the float value
+    print(df.iloc[-1].index[-1])

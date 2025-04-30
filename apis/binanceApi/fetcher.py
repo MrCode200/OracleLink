@@ -43,4 +43,4 @@ def fetch_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
 
 if __name__ == '__main__':
     df = fetch_klines(symbol='BTCUSDT', interval='1m', limit=100)
-    print(df.iloc[-1]['Close'])
+    print(df.iloc[-1]['Close Time'])

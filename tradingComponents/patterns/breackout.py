@@ -37,7 +37,7 @@ def breakout(df) -> dict[str, float | str]:
     support, resistance = detect_support_resistance(df.iloc[:-1], order=4)
     last_candle: Series = df.iloc[-1]  # کندل بسته‌شده‌ی آخر
     last_close: float = last_candle['Close']
-    close_time: str = last_candle['Close Time']
+    close_time: str = df.index[-1].timestamp()
 
     nearest_support, nearest_resistance = support[-1], resistance[-1]
     breakouts: dict[str, float | str] = check_breakout(last_close, nearest_support, nearest_resistance, close_time)
