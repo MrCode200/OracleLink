@@ -327,7 +327,7 @@ class OracleLinkBot:
                                     return_img_buffer=True, show_candles=25)
 
             caption: str = f"{symbol}-{interval}\n\n"
-            caption = f"STT: {stt_conf}\n"
+            caption += f"STT: {stt_conf}\n"
             for key, value in stt_data.items():
                 caption += f"{key}: {value}\n"
 
