@@ -11,7 +11,7 @@ from .additions import FilteredPersistence
 from tradingComponents.patterns.breackout import breakout
 from tradingComponents.Dow import detect_dow_trend, plot_candle_chart
 from .commands import log_handler
-from apis.yahooAPI.fetcher import fetch_klines
+from apis.binanceApi.fetcher import fetch_klines
 from tradingComponents.strategies import ShadowsTrendingTouch
 from .utils import parse_interval, seconds_to_next_boundry
 
@@ -56,6 +56,7 @@ class OracleLinkBot:
         application.add_handler(MessageHandler(filters.COMMAND, log_handler, block=False))
 
         all_user_data: dict = await self.persistence.get_user_data()
+        logger.info(f"Notifying {len(all_user_data)} users...")
         for user_id in all_user_data.keys():
             await application.bot.send_message(
                 chat_id=user_id,
