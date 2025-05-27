@@ -33,7 +33,7 @@ class KianStrat:
         if peaks is None or valleys is None:
             return 0
 
-        peak_and_low_candle_delta = abs(peaks[-1] - valleys[-1]) # <-- The difference between the last peak and the last valley ###KIAN
+        peak_and_low_candle_distance_delta = abs(peaks[-1] - valleys[-1]) # <-- The difference between the last peak and the last valley ###KIAN
 
         # Buy
         if (peaks[-1] < valleys[-1] and
