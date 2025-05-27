@@ -32,11 +32,17 @@ class KianStrat:
             return 0
 
         # Buy
-        if peaks[-1] < valleys[-1] and (not self.check_trend or trend_info['trend'] == Trend.UPTREND):
+        if (peaks[-1] < valleys[-1] and
+            (not self.check_trend or trend_info['trend'] == Trend.UPTREND) and
+            df.get('Close').iloc[-1] == ...): # <-- Under what price it should buy ###KIAN
             return 1
+
         # Sell
-        elif valleys[-1] < peaks[-1] and (not self.check_trend or trend_info['trend'] == Trend.DOWNTREND):
+        elif (valleys[-1] < peaks[-1] and
+              (not self.check_trend or trend_info['trend'] == Trend.DOWNTREND) and
+              df.get('Close').iloc[-1] == ...): # <-- Under what price it should sell ###KIAN
             return -1
+
         else:
             return 0
 
