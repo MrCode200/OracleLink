@@ -337,6 +337,7 @@ class OracleLinkBot:
                 caption += f"{key}: {value}\n"
 
             await context.bot.send_photo(chat_id=chat_id, photo=buf, caption=caption)
+
         except Exception as e:
             await context.bot.send_message(chat_id=chat_id, text=f"Error: {e}")
             raise

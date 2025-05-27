@@ -56,12 +56,12 @@ def plot_candle_chart(df: pd.DataFrame, peaks: list[int] = None, valleys: list[i
         )
 
     # Add support and resistance lines if breakout info is provided
-    if breakout_info.get('support') is not None:
+    if getattr(breakout_info, 'support', None) is not None:
         print(breakout_info['support'])
         support_line = pd.Series([breakout_info['support']] * len(df), index=df.index)
         apds.append(mpf.make_addplot(support_line, color='green', linestyle='--', label='Support'))
 
-    if breakout_info.get('resistance') is not None:
+    if getattr(breakout_info, 'resistance', None) is not None:
         resistance_line = pd.Series([breakout_info['resistance']] * len(df), index=df.index)
         apds.append(mpf.make_addplot(resistance_line, color='red', linestyle='--', label='Resistance'))
 

@@ -26,7 +26,7 @@ class ShadowsTrendingTouch:
     def evaluate(self, df: DataFrame) -> float:
         valid_df_range: int = self.sma_period + 1
         if len(df) < valid_df_range:
-            return 0, {"Not Enough Data": True}
+            return 0
 
         self_df = df.copy().iloc[-valid_df_range:]
         last_candle = self_df.iloc[-1]
@@ -42,11 +42,11 @@ class ShadowsTrendingTouch:
         body_min: float = min(last_candle.Open, last_candle.Close)
 
         if body_min < sma.iloc[-1] < body_max:
-            return 0, {"Touch": True}
+            return 0
 
         # Bullish candle and above sma OR Bearish candle and below sma
         if bullish_candle != candle_above_sma:
-            return 0, {"Correct Position": False}
+            return 0
 
         # Find Shadow Touching Size
         if bullish_candle:
@@ -56,38 +56,25 @@ class ShadowsTrendingTouch:
             shadows_touch_size = last_candle.High - last_candle.Open
             opposite_shadow_size = last_candle.Close - last_candle.Low
 
-
-        # Shadow to Body Ratio is big enough
-        debug_data = {
-            "High": last_candle.High,
-            "Low": last_candle.Low,
-            "Close": last_candle.Close,
-            "Open": last_candle.Open,
-            "ShadowSize": shadows_touch_size,
-            "ShadowBodyRatio": shadows_touch_size / body_size,
-            "ShadowBodyRatioValid": shadows_touch_size / body_size >= self.shadow_to_body_ratio,
-            "OppositeShadowSize": opposite_shadow_size,
-            "OppositeShadowBodyRatio": opposite_shadow_size / body_size,
-            "OppositeShadowBodyRatioValid": opposite_shadow_size / body_size <= self.opposite_shadow_to_body_ratio_limit
-        }
+        # Shadow touching ratio
         if shadows_touch_size / body_size < self.shadow_to_body_ratio: # Green Close to High, Red Close to Low
-            return 0, debug_data # DEBUG: data
+            return 0
 
         # Opposite shadow small enough
         if (self.opposite_shadow_to_body_ratio_limit is not None and
                 opposite_shadow_size / body_size > self.opposite_shadow_to_body_ratio_limit):
-            return 0, debug_data # DEBUG: data
+            return 0
 
         if self.ignore_sma_touch:
-            return 1 if bullish_candle else -1, debug_data
+            return 1 if bullish_candle else -1
 
         # Check candles shadow is touching SMA
         padding: float = self.shadow_multiplier * shadows_touch_size
         if bullish_candle:
             if last_candle.Low - padding <= sma.iloc[-1]:
-                return 1, debug_data # DEBUG: data
+                return 1
         else:
             if last_candle.High + padding >= sma.iloc[-1]:
-                return -1, debug_data # DEBUG: data
+                return -1
 
-        return 0, debug_data # DEBUG: data
+        return 0
