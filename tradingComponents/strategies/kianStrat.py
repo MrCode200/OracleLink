@@ -43,6 +43,5 @@ class KianStrat:
               df.get('Close').iloc[-1] == ...): # <-- Under what price it should sell ###KIAN
             return -1
 
-        else:
-            return 0
+        return 0
 
