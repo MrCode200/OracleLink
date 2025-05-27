@@ -19,6 +19,8 @@ class KianStrat:
         """
         ...
 
+        The df needs to be the same as the one used to detect the peaks and valleys
+
         :param df: DataFrame of klines
         :param trend_info: Dictionary of trend info
         :param peaks: Array of num of index candle for each peak
@@ -30,6 +32,8 @@ class KianStrat:
 
         if peaks is None or valleys is None:
             return 0
+
+        peak_and_low_candle_delta = abs(peaks[-1] - valleys[-1]) # <-- The difference between the last peak and the last valley ###KIAN
 
         # Buy
         if (peaks[-1] < valleys[-1] and
