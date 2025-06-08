@@ -1,13 +1,11 @@
 from dataclasses import dataclass, field
-from typing import Optional
-from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import uuid4, UUID
 
-from paperTrading.enums import Side, Action
+from paperTrading.models import BaseTradingData
 
 
 @dataclass
-class OrderRequest:
+class OrderRequest(BaseTradingData):
     """
     :param uuid: universally unique identifier (uuid.uuid4())
     :param symbol: e.g. "BTCUSDT"
@@ -15,7 +13,7 @@ class OrderRequest:
 
     :param confidence: confidence level (-1.0 to 1.0) where -1 = max sell, 0 = neutral, +1 = max buy, can be of type float
 
-    :param price: price for limit orders, if none will buy/sell at current price
+    :param entry_price: price for limit orders, if none will buy/sell at current price
     :param side: Side.LONG or Side.SHORT
     :param action: Action.SELL or Action.BUY
     :param qty: quantity in base units, if none the Simulator will decide
@@ -23,17 +21,15 @@ class OrderRequest:
     :param stop_loss: the price where the stop loss should be placed
     :param take_profit: the price where the take profit should be placed
     """
-    symbol: str
-    timestamp: float
 
-    confidence: float
+    root_uuid: UUID = field(default_factory=uuid4, init=False)
 
-    price: Optional[float] = None
-    side: Side = Side.LONG
-    action: Action = Action.BUY
-    qty: Optional[float] = None
+    def __post_init__(self):
+        if self.entry_price is None:
+            return
 
-    uuid: UUID = field(default_factory=uuid4)
+        if self.stop_loss is not None and self.entry_price <= self.stop_loss:
+            raise ValueError("Stop loss must be less than to entry price.")
+        if self.take_profit is not None and self.entry_price >= self.take_profit:
+            raise ValueError("Take profit must be greater than to entry price.")
 
-    stop_loss: Optional[float] = None
-    take_profit: Optional[float] = None

@@ -1,15 +1,15 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
-from uuid import UUID, uuid4
+from xml.dom.minidom import Element
+from xml.etree.ElementTree import SubElement
 
-from apis.binanceApi import fetch_klines
-from paperTrading.enums import Side, Action
+from paperTrading.enums import Side
 from paperTrading.models import Position
+from paperTrading.models import BaseTradingData
 
-
-@dataclass
-class TradeRecord:
+@dataclass(kw_only=True)
+class TradeRecord(BaseTradingData):
     """
     :param uuid: universally unique identifier (uuid.uuid4())
     :param symbol: e.g. "BTCUSDT"
@@ -28,23 +28,10 @@ class TradeRecord:
     :param stop_loss: stop loss if used
     :param take_profit: take profit if used
     """
-    symbol: str
     entry_timestamp: float
     exit_timestamp: float
 
-    confidence: float
-
-    entry_price: float
-    side: Side
-    action: Action
-    qty: float
-
     pnl: float
-
-    uuid: UUID = field(default_factory=uuid4)
-
-    stop_loss: Optional[float] = None
-    take_profit: Optional[float] = None
 
     @classmethod
     def from_position(cls, position: Position, pnl: Optional[float] = None, closed_at_price: Optional[float] = None) -> "TradeRecord":
@@ -61,12 +48,12 @@ class TradeRecord:
 
         if pnl is None:
             if position.side == Side.LONG:
-                pnl = (closed_at_price - position.price) * position.qty
+                pnl = (closed_at_price - position.entry_price) * position.qty
             else:
-                pnl = (position.price - closed_at_price) * position.qty
+                pnl = (position.entry_price - closed_at_price) * position.qty
 
         return cls(
-            uuid=position.uuid,
+            root_uuid=position.root_uuid,
 
             symbol=position.symbol,
             entry_timestamp=position.timestamp,
@@ -74,7 +61,7 @@ class TradeRecord:
 
             confidence=position.confidence,
 
-            entry_price=position.price,
+            entry_price=position.entry_price,
             side=position.side,
             action=position.action,
             qty=position.qty,
@@ -84,3 +71,28 @@ class TradeRecord:
             stop_loss=position.stop_loss,
             take_profit=position.take_profit
         )
+
+    def save_to_xml(self, root: Element) -> None:
+        trade_record_element = SubElement(root, "trade_record", {"uuid": str(self.uuid)})
+
+        # Basic Fields
+        SubElement(trade_record_element, "symbol").text = self.symbol
+
+        SubElement(trade_record_element, "confidence").text = str(self.confidence)
+
+        SubElement(trade_record_element, "entry_price").text = str(self.entry_price)
+        SubElement(trade_record_element, "side").text = self.side.name
+        SubElement(trade_record_element, "action").text = self.action.name
+        SubElement(trade_record_element, "qty").text = str(self.qty)
+        SubElement(trade_record_element, "pnl").text = str(self.pnl)
+
+        # Timestamps, converting to ISO format for readability
+        entry_ts = datetime.fromtimestamp(self.entry_timestamp, tz=timezone.utc).isoformat()
+        exit_ts = datetime.fromtimestamp(self.exit_timestamp, tz=timezone.utc).isoformat()
+        SubElement(trade_record_element, "entry_timestamp").text = entry_ts
+        SubElement(trade_record_element, "exit_timestamp").text = exit_ts
+
+        if self.stop_loss is not None:
+            SubElement(trade_record_element, "stop_loss").text = str(self.stop_loss)
+        if self.take_profit is not None:
+            SubElement(trade_record_element, "take_profit").text = str(self.take_profit)

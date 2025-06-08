@@ -6,5 +6,5 @@ class Side(Enum):
     SHORT = "short"
 
 class Action(Enum):
-    SELL = "sell"
-    BUY = "buy"
+    CLOSE = "close"
+    OPEN = "buy"
