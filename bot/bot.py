@@ -102,7 +102,7 @@ class OracleLinkBot:
             )
             return
         watchlist = context.user_data.setdefault('watchlist', [])
-        if (symbol, timeframe) in watchlist:
+        if (symbol, timeframe, send_always) in watchlist:
             await update.message.reply_text(
                 f"⚠️ {symbol} already exists with timeframe {timeframe}"
             )
@@ -129,8 +129,8 @@ class OracleLinkBot:
         message += "Symbol    Timeframe\n"
         message += "─" * 20 + "\n"  # Separator line
 
-        for symbol, tf in sorted_watchlist:
-            message += f"{symbol:<9} {tf}\n"
+        for symbol, timeframe, send_always in sorted_watchlist:
+            message += f"{symbol:<9} {timeframe}{" (send_always)" if send_always else ""}\n"
 
         message += "</code>"  # End monospace formatting
 
