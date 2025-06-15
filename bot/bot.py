@@ -230,7 +230,7 @@ class OracleLinkBot:
         for symbol, interval, send_always in current_items:
             keyboard.append([
                 InlineKeyboardButton(
-                    f"❌ {symbol} ({interval}){' Send always' if send_always else ''}",
+                    f"❌ {symbol} ({interval}){' Send always: on' if send_always else 'Send always: off'}",
                     callback_data=f"remove_{symbol}_{interval}_{send_always}"
                 )
             ])
@@ -284,7 +284,7 @@ class OracleLinkBot:
                 else:
                     await query.message.edit_text("Your watchlist is now empty! Nothing to manage. 📭")
                 
-                await query.answer(f"Removed {symbol} ({interval}){' Send always' if send_always else ''} ✅")
+                await query.answer(f"Removed {symbol} ({interval}){' Send always: on' if send_always else ' Send always: off'} ✅")
 
         elif query.data == 'start':
             if context.user_data.get('running'):
