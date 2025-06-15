@@ -87,11 +87,12 @@ class OracleLinkBot:
     async def add_symbol_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         args = context.args
         if len(args) != 2:
-            await update.message.reply_text("Usage: /add <symbol> <timeframe>")
+            await update.message.reply_text("Usage: /add <symbol> <timeframe> <send_always>")
             return
 
         symbol = args[0].upper()
         timeframe = args[1].lower()
+        send_always = bool(args[2].lower())
 
         # Validate timeframe (optional)
         valid_timeframes = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w']
@@ -107,7 +108,7 @@ class OracleLinkBot:
             )
             return
 
-        watchlist.append((symbol, timeframe))
+        watchlist.append((symbol, timeframe, send_always))
         await update.message.reply_text(f"✅ Added {symbol} ({timeframe}) to watchlist")
 
     async def list_watchlist_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -172,10 +173,11 @@ class OracleLinkBot:
         chat_id = update.effective_chat.id
         user_data['running'] = True
 
-        for symbol, interval_str in watchlist:
+        for symbol, interval_str, send_always in watchlist:
             interval_sec: int = parse_interval(interval_str)
             delay: float = seconds_to_next_boundry(interval_sec)
-            logger.debug(f"Starting job for {symbol} with interval {interval_sec} seconds")
+
+            logger.debug(f"Starting job for {symbol} with interval {interval_sec} seconds; Send always: {send_always}")
             context.job_queue.run_repeating(
                 self.scheduled_job,
                 interval=interval_sec,
@@ -184,7 +186,8 @@ class OracleLinkBot:
                     'chat_id': chat_id,
                     'user_id': update.effective_user.id,
                     'symbol': symbol,
-                    'interval': interval_str
+                    'interval': interval_str,
+                    'send_always': send_always
                 }
             )
 
@@ -224,11 +227,11 @@ class OracleLinkBot:
 
         keyboard = []
         # Add watchlist item buttons
-        for symbol, interval in current_items:
+        for symbol, interval, send_always in current_items:
             keyboard.append([
                 InlineKeyboardButton(
-                    f"❌ {symbol} ({interval})",
-                    callback_data=f"remove_{symbol}_{interval}"
+                    f"❌ {symbol} ({interval}){' Send always' if send_always else ''}",
+                    callback_data=f"remove_{symbol}_{interval}_{send_always}"
                 )
             ])
 
@@ -262,9 +265,9 @@ class OracleLinkBot:
 
         elif query.data.startswith('remove_'):
             # Handle item removal
-            _, symbol, interval = query.data.split('_')
+            _, symbol, interval, send_always = query.data.split('_')
             watchlist = user_data.get('watchlist', [])
-            item = (symbol, interval)
+            item = (symbol, interval, send_always)
 
             if item in watchlist:
                 watchlist.remove(item)
@@ -281,7 +284,7 @@ class OracleLinkBot:
                 else:
                     await query.message.edit_text("Your watchlist is now empty! Nothing to manage. 📭")
                 
-                await query.answer(f"Removed {symbol} ({interval}) ✅")
+                await query.answer(f"Removed {symbol} ({interval}){' Send always' if send_always else ''} ✅")
 
         elif query.data == 'start':
             if context.user_data.get('running'):
@@ -305,6 +308,7 @@ class OracleLinkBot:
         chat_id = job_data["chat_id"]
         interval = job_data["interval"]
         symbol = job_data["symbol"]
+        send_always = job_data["send_always"]
 
         # Fetching data
         # Due to random delays we delay for new candle and remove it
@@ -319,7 +323,7 @@ class OracleLinkBot:
             # Breakout
             breakout_info: dict[str, float | str] = breakout(df)
 
-            if conf == 0 or breakout_info["direction"] is None:
+            if not send_always and (conf == 0 or breakout_info["direction"] is None):
                 return
 
             # Dow
