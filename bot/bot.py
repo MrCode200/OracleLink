@@ -86,13 +86,13 @@ class OracleLinkBot:
 
     async def add_symbol_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         args = context.args
-        if len(args) != 2:
-            await update.message.reply_text("Usage: /add <symbol> <timeframe> <send_always>")
+        if len(args) not in [2, 3]:
+            await update.message.reply_text("Usage: /add <symbol> <timeframe> <send_always: optional>")
             return
 
         symbol = args[0].upper()
         timeframe = args[1].lower()
-        send_always = bool(args[2].lower())
+        send_always = bool(args[2].lower()) if len(args) == 3 else False
 
         # Validate timeframe (optional)
         valid_timeframes = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w']
