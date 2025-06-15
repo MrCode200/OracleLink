@@ -314,12 +314,12 @@ class OracleLinkBot:
             df = df.iloc[:-1]
 
             # STT
-            stt_conf, stt_data = stt.evaluate(df)
+            conf = stt.evaluate(df)
 
             # Breakout
             breakout_info: dict[str, float | str] = breakout(df)
 
-            if stt_conf == 0 or breakout_info["direction"] is None:
+            if conf == 0 or breakout_info["direction"] is None:
                 return
 
             # Dow
@@ -328,9 +328,7 @@ class OracleLinkBot:
                                     return_img_buffer=True, show_candles=25)
 
             caption: str = f"{symbol}-{interval}\n\n"
-            caption += f"STT: {stt_conf}\n"
-            for key, value in stt_data.items():
-                caption += f"{key}: {value}\n"
+            caption += f"STT: {conf}\n"
 
             caption += "\nBreakout:\n"
             for key, value in breakout_info.items():
